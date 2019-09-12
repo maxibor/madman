@@ -1,4 +1,4 @@
-name: megahit-nf
+name: env-megahit-nf
 channels:
   - conda-forge
   - bioconda

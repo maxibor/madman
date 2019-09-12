@@ -17,7 +17,7 @@ install:
 
   # Replace dep1 dep2 ... with your dependencies
   - conda create -f environment.yaml
-  - source activate megahit-nf
+  - source activate env-megahit-nf
 
 script:
   - nextflow run main.nf -profile test
