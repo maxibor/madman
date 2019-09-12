@@ -16,7 +16,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -f environment.yaml
+  - conda env create -f environment.yaml
   - source activate env-megahit-nf
 
 script:
