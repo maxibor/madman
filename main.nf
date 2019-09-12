@@ -37,9 +37,10 @@ Channel
 log.info "================================================================"
 def summary = [:]
 summary['Reads'] = params.reads
+summary['minlen'] = params.minlen
 summary['Config Profile'] = workflow.profile
 log.info summary.collect { k,v -> "${k.padRight(25)}: $v" }.join("\n")
-log.info "\033[2m----------------------------------------------------\033[0m"
+log.info "----------------------------------------------------------------"
 
 
 process AdapterRemoval {
@@ -51,7 +52,7 @@ process AdapterRemoval {
         set val(name), file(reads) from reads_to_trim
 
     output:
-        set val(name), file('*.trimmed.fastq') into trimmed_reads
+        set val(name), file('*.trimmed.fastq') into trimmed_reads_assembly, trimmed_reads_mapping
         file("*.settings") into adapter_removal_results
 
     script:
@@ -67,8 +68,7 @@ process AdapterRemoval {
             """
             AdapterRemoval --basename $name --file1 ${reads[0]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $se_out --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
             """
-        }
-            
+        }    
 }
 
 process megahit {
@@ -79,11 +79,11 @@ process megahit {
     publishDir "${params.results}/assembly/${name}", mode: 'copy'
 
     input:
-        set val(name), file(reads) from trimmed_reads
+        set val(name), file(reads) from trimmed_reads_assembly
 
     output:
-        set val(name), file ("megahit_out/*.contigs.fa") into contigs_mapping, contigs_filter
-        set val(name), file("megahit_out/log") into megahit_log
+        set val(name), file("megahit_out/*.contigs.fa") into contigs_filter
+        set val(name), file("megahit_out/*.log") into megahit_log
     script:
         mem = task.memory.toBytes()
         """
@@ -101,22 +101,49 @@ process filter_fasta {
     input:
         set val(name), file(fasta) from contigs_filter
     output:
-        set val(name), file("*.filtered.fa") into filtered_contigs
+        set val(name), file("*.filtered.fa") into filtered_fa
     script:
+        filter_out = name+".filtered.fa"
         """
-        filter_fasta_length -min ${params.minlen} -p ${task.cpus}
+        filter_fasta_length.py -min ${params.minlen} -p ${task.cpus} $fasta -o $filter_out
         """
 }
 
+process split_fasta {
+    tag "$name"
+
+    label 'intenso'
+
+    publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(fasta) from filtered_fa
+    output:
+        file("*.split.fa") into split_contigs
+    script:
+        filter_out = name+".filtered.fa"
+        """
+        split_fasta.py -p ${task.cpus} ${name}.filtered.fa
+        """
+}
+
+split_contigs
+    .flatten()
+    .map { it -> tuple(it.baseName, it) }
+    .into {filtered_contigs_bt; filtered_contigs_dp}
+
+trimmed_reads_mapping
+    .map {it -> it}
+    .set {trimmed_reads_mapping_ch}
+
+    
 // process bowtie_index_contigs{
 //     tag "$name"
 
 //     label 'intenso'
 
-//     conda 'bioconda::bowtie2'
-
 //     input:
-//         set val(name), file(contig) from contigs_mapping
+//         set val(name), file(contig) from filtered_contigs_bt
 //     output:
 //         set val(name), file("*.bt2") into bt_index
 //     script:
@@ -125,45 +152,55 @@ process filter_fasta {
 //         """
 // }
 
-// process align_reads_to_contigs{
-//     tag "$name"
-
-//     label 'intenso'
-
-//     conda 'bioconda::bowtie2'
-
-//     publishDir "${params.results}/alignment/${name}", mode: 'copy'
-
-//     input:
-//         set val(name), file(reads) from trimmed_reads_mapping
-//         set val(name), file(contig) from bt_index
-//     output:
-//         set val(name), file("*.sorted.bam") into alignment_to_index, alignment_to_coverage, alignment_to_sam
-//     script:
-//         outfile = name+".sorted.bam"
-//         """
-//         bowtie2 -x $name -U $reads --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
-//         """
-
-// }
-
-// process damageProfiler {
-//     tag "$name"
-
-//     label 'expresso'
 
 
 
-//     input:
-//         set val(name), file(bam) from aligned_bam
-//     output:
-//         file("*dmgprof.json") into dmgProf
-//     script:
-//         """
-//         damageprofiler -i $bam -r ${params.fasta_ref} -o tmp
-//         mv tmp/${name}.aligned.sorted/dmgprof.json ${name}.dmgprof.json
-//         """
-// }
+process align_reads_to_contigs{
+    tag "$outname"
+
+    label 'intenso'
+
+    publishDir "${params.results}/alignment/${name}", mode: 'copy'
+
+    input:
+        // set val(read_name), file(reads) from trimmed_reads_mapping
+        set val(name), file(contig), val(name2), file(reads) from filtered_contigs_bt.combine(trimmed_reads_mapping_ch)
+    output:
+        set val(name), file("*.sorted.bam") into alignment_to_dp
+    script:
+        outfile = name+".sorted.bam"
+        if (params.pairedEnd) {
+            """
+            bowtie2-build --threads ${task.cpus} $contig $name
+            bowtie2 -x $name -1 ${reads[0]} -2 ${reads[1]} --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
+            """
+        } else {
+            """
+            bowtie2-build --threads ${task.cpus} $contig $name
+            bowtie2 -x $name -U $reads --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
+            """
+        }
+        
+
+}
+
+process damageProfiler {
+    tag "$name"
+
+    label 'expresso'
+
+    publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(bam), file(contig) from alignment_to_dp.join(filtered_contigs_dp)
+    output:
+        file("*dmgprof.json") into dmgProf
+    script:
+        """
+        damageprofiler -i $bam -r $contig -o tmp
+        mv tmp/${name}.sorted/dmgprof.json ${name}.dmgprof.json
+        """
+}
 
 process multiqc {
     label 'ristretto'
@@ -171,7 +208,7 @@ process multiqc {
     publishDir "${params.results}/multiqc", mode: 'copy'
 
     input:
-        // file ('DamageProfiler/*') from dmgProf.collect()
+        file ('DamageProfiler/*') from dmgProf.collect()
         file ('AdapterRemoval/*') from adapter_removal_results.collect()
     output:
         file 'multiqc_report.html' into multiqc_report
@@ -180,7 +217,7 @@ process multiqc {
         // multiqc -f -d DamageProfiler
         // """   
         """
-        multiqc -f -d AdapterRemoval
+        multiqc -f -d AdapterRemoval DamageProfiler
         """   
 }
 

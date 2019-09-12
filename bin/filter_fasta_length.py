@@ -3,6 +3,7 @@
 import argparse
 import multiprocessing as mp
 from functools import partial
+from textwrap import wrap
 
 
 def _get_args():
@@ -21,7 +22,7 @@ def _get_args():
         help="Maximim sequence size. Default = 99999999999999999999999999999999")
     parser.add_argument(
         '-p',
-        default=1
+        default=1,
         help='Number of process for multiprocessing. Default=1'
     )
     parser.add_argument(
@@ -48,9 +49,11 @@ def get_basename(file_name):
         basename = file_name.split(".")[0]
     return(basename)
 
-def process_sequence(thekey, thedict, seqmin, seqmax, outdict):
+def process_sequence(thekey, thedict, seqmin, seqmax):
+    resdict = {}
     if len("".join(thedict[thekey])) >= seqmin and len("".join(thedict[thekey])) <= seqmax:
-            outdict[thekey] = thedict[thekey]
+        resdict[thekey] = "".join(thedict[thekey])
+        return(resdict)
 
 
 if __name__ == "__main__":
@@ -61,6 +64,7 @@ if __name__ == "__main__":
     if not OUTFILE:
         OUTFILE = basename + ".filtered.fa"
 
+    
     fastadict = {}
     fasta_filtered_dict = {}
     with open(INFILE, "r") as f:
@@ -73,20 +77,25 @@ if __name__ == "__main__":
                 fastadict[seqname].append(line)
 
     process_partial = partial(process_sequence, 
-                              thedict = fasta_dict, 
+                              thedict = fastadict, 
                               seqmin=SEQMIN, 
-                              seqmax=SEQMAX, 
-                              outdict=fasta_filtered_dict)
+                              seqmax=SEQMAX)
 
     if (PROCESS > 1):
-        with multiprocessing.Pool(PROCESS) as p:
-            p.map(list(fasta_dict.keys(process_partial)))
+        with mp.Pool(PROCESS) as p:
+            res = p.map(process_partial, list(fastadict.keys()))
     else :
-        for seq in fastadict.keys():
-            if len("".join(fastadict[seq])) >= SEQMIN and len("".join(fastadict[seq])) <= SEQMAX:
-                fasta_filtered_dict[seq] = fastadict[seq]
+        res = []
+        for seq in list(fastadict.keys()):
+            res.append(process_sequence(thekey = seq, thedict=fastadict, seqmin=SEQMIN, seqmax=SEQMAX))
 
+    for d in res:
+        if d:
+            fasta_filtered_dict.update(d)
+
+    # print(fasta_filtered_dict)
     with open(OUTFILE, "w") as fw:
-        for seq in fasta_filtered_dict.keys():
+        for seq in list(fasta_filtered_dict.keys()):
             fw.write(seq + "\n")
-            fw.write("\n".join(fasta_filtered_dict[seq]) + "\n")
+            fw.write("\n".join(wrap(("".join(fasta_filtered_dict[seq])), width = 80)))
+            fw.write("\n")

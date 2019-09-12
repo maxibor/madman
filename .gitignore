@@ -1,9 +1,10 @@
 #Nextflow stuff
 .nextflow.log*
 .nextflow
-.null
-.work
-.results
+null
+work
+results
+dag*
 
 
 # Byte-compiled / optimized / DLL files
