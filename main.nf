@@ -156,9 +156,11 @@ trimmed_reads_mapping
 
 
 process align_reads_to_contigs{
-    tag "$outname"
+    tag "$name"
 
     label 'intenso'
+
+    errorStrategy 'ignore'
 
     publishDir "${params.results}/alignment/${name}", mode: 'copy'
 
@@ -188,6 +190,8 @@ process damageProfiler {
     tag "$name"
 
     label 'expresso'
+
+    errorStrategy 'ignore'
 
     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
 
