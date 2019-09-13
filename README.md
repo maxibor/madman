@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/maxibor/megahit-nf.svg?token=pwT9AgYi4qJY4LTp9WUy&branch=master)](https://travis-ci.com/maxibor/megahit-nf)
+
 # megahit-nf
 
 Simple megahit2 Nextflow pipeline
