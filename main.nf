@@ -16,6 +16,7 @@ def helpMessage() {
       --phred                       Specifies the fastq quality encoding (33 | 64). Defaults to ${params.phred}
       --pairedEnd                   Specifies if reads are paired-end (true | false). Default = ${params.pairedEnd}
       --minlen                      Minimum contig length to retain. Default =  ${params.minlen}
+      --pmdscore                    PMDTools score threshold. Default = ${params.pmdscore}
 
     Options:
       --results                     The output directory where the results will be saved. Defaults to ${params.results}
@@ -109,32 +110,32 @@ process filter_fasta {
         """
 }
 
-process split_fasta {
-    tag "$name"
+// process split_fasta {
+//     tag "$name"
 
-    label 'intenso'
+//     label 'intenso'
 
-    publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
+//     publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
 
-    input:
-        set val(name), file(fasta) from filtered_fa
-    output:
-        file("*.split.fa") into split_contigs
-    script:
-        filter_out = name+".filtered.fa"
-        """
-        split_fasta.py -p ${task.cpus} ${name}.filtered.fa
-        """
-}
+//     input:
+//         set val(name), file(fasta) from filtered_fa
+//     output:
+//         file("*.split.fa") into split_contigs
+//     script:
+//         filter_out = name+".filtered.fa"
+//         """
+//         split_fasta.py -p ${task.cpus} ${name}.filtered.fa
+//         """
+// }
 
-split_contigs
-    .flatten()
-    .map { it -> tuple(it.baseName, it) }
-    .into {filtered_contigs_bt; filtered_contigs_dp}
+// split_contigs
+//     .flatten()
+//     .map { it -> tuple(it.baseName, it) }
+//     .into {filtered_contigs_bt; filtered_contigs_dp}
 
-trimmed_reads_mapping
-    .map {it -> it}
-    .set {trimmed_reads_mapping_ch}
+// trimmed_reads_mapping
+//     .map {it -> it}
+//     .set {trimmed_reads_mapping_ch}
 
     
 // process bowtie_index_contigs{
@@ -166,44 +167,88 @@ process align_reads_to_contigs{
 
     input:
         // set val(read_name), file(reads) from trimmed_reads_mapping
-        set val(name), file(contig), val(name2), file(reads) from filtered_contigs_bt.combine(trimmed_reads_mapping_ch)
+        set val(name), file(contigs), val(name2), file(reads) from filtered_fa.combine(trimmed_reads_mapping)
     output:
-        set val(name), file("*.sorted.bam") into alignment_to_dp
+        set val(name), file("*.sorted.bam") into alignment_to_dp, alignment_to_pmd
     script:
         outfile = name+".sorted.bam"
         if (params.pairedEnd) {
             """
-            bowtie2-build --threads ${task.cpus} $contig $name
+            bowtie2-build --threads ${task.cpus} $contigs $name
             bowtie2 -x $name -1 ${reads[0]} -2 ${reads[1]} --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
             """
         } else {
             """
-            bowtie2-build --threads ${task.cpus} $contig $name
+            bowtie2-build --threads ${task.cpus} $contigs $name
             bowtie2 -x $name -U $reads --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
             """
         }
-        
-
 }
 
-process damageProfiler {
+// process damageProfiler {
+//     tag "$name"
+
+//     label 'expresso'
+
+//     errorStrategy 'ignore'
+
+//     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
+
+//     input:
+//         set val(name), file(bam), file(contig) from alignment_to_dp.join(filtered_contigs_dp)
+//     output:
+//         file("*dmgprof.json") into dmgProf
+//     script:
+//         """
+//         damageprofiler -i $bam -r $contig -o tmp
+//         mv tmp/${name}.sorted/dmgprof.json ${name}.dmgprof.json
+//         """
+// }
+
+
+
+process PMDtools {
+        tag "$name"
+
+        label 'intenso'
+
+        publishDir "${params.results}/pmdtools/", mode: 'copy', pattern: '*.fastq'
+
+        input:
+            set val(name), file(bam) from alignment_to_pmd
+        output:
+            set val(name), file("*.fastq") into pmd_assemble, pmd_map
+        script:
+            fwd_out = name+"_pmd_R1.fastq"
+            rev_out = name+"_pmd_R2.fastq"
+            """
+            samtools view -h -F 4 $bam |\\
+            pmdtools -t ${params.pmdscore} --header |\\
+            samtools view -Sbh -@ ${task.cpus} - |\\
+            samtools fastq -1 $fwd_out -2 $rev_out -
+            """
+    }
+
+process megahit_pmd {
     tag "$name"
 
-    label 'expresso'
+    label 'bigmem'
 
-    errorStrategy 'ignore'
-
-    publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
+    publishDir "${params.results}/pmd_assembly/${name}", mode: 'copy'
 
     input:
-        set val(name), file(bam), file(contig) from alignment_to_dp.join(filtered_contigs_dp)
+        set val(name), file(reads) from pmd_assemble
+
     output:
-        file("*dmgprof.json") into dmgProf
+        set val(name), file("megahit_out/*.contigs.fa") into pmd_contigs_filter
+        set val(name), file("megahit_out/*.log") into pmd_megahit_log
     script:
+        mem = task.memory.toBytes()
         """
-        damageprofiler -i $bam -r $contig -o tmp
-        mv tmp/${name}.sorted/dmgprof.json ${name}.dmgprof.json
-        """
+        cat *_pmd_R1.fastq > forward.fq
+        cat *_pmd_R2.fastq > reverse.fq
+        megahit -1 forward.fq -2 reverse.fq -t ${task.cpus} -m $mem --out-prefix $name
+        """       
 }
 
 process multiqc {
@@ -212,19 +257,18 @@ process multiqc {
     publishDir "${params.results}/multiqc", mode: 'copy'
 
     input:
-        file ('DamageProfiler/*') from dmgProf.collect()
+        // file ('DamageProfiler/*') from dmgProf.collect()
         file ('AdapterRemoval/*') from adapter_removal_results.collect()
     output:
         file 'multiqc_report.html' into multiqc_report
     script:
-        // """
-        // multiqc -f -d DamageProfiler
-        // """   
         """
-        multiqc -f -d AdapterRemoval DamageProfiler
+        multiqc -f -d AdapterRemoval
         """   
+        // """
+        // multiqc -f -d AdapterRemoval DamageProfiler
+        // """   
 }
-
 
 // process miniKraken {
 //     tag "$name"

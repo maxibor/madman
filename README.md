@@ -2,7 +2,7 @@
 
 # megahit-nf
 
-Simple megahit2 Nextflow pipeline
+Simple megahit Nextflow pipeline
 
 ## Dependancies
 
