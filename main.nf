@@ -110,53 +110,33 @@ process filter_fasta {
         """
 }
 
-// process split_fasta {
-//     tag "$name"
+process split_fasta {
+    tag "$name"
 
-//     label 'intenso'
+    label 'intenso'
 
-//     publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
+    publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
 
-//     input:
-//         set val(name), file(fasta) from filtered_fa
-//     output:
-//         file("*.split.fa") into split_contigs
-//     script:
-//         filter_out = name+".filtered.fa"
-//         """
-//         split_fasta.py -p ${task.cpus} ${name}.filtered.fa
-//         """
-// }
+    input:
+        set val(name), file(fasta) from filtered_fa
+    output:
+        file("*.split.fa") into split_contigs
+    script:
+        """
+        split_fasta.py -p ${task.cpus} $fasta
+        """
+}
 
-// split_contigs
-//     .flatten()
-//     .map { it -> tuple(it.baseName, it) }
-//     .into {filtered_contigs_bt; filtered_contigs_dp}
+split_contigs
+    .flatten()
+    .map { it -> tuple(it.baseName, it) }  
+    .into {filtered_contigs_bt; filtered_contigs_dp}
 
-// trimmed_reads_mapping
-//     .map {it -> it}
-//     .set {trimmed_reads_mapping_ch}
+trimmed_reads_mapping
+    .map {it -> it}
+    .set {trimmed_reads_mapping_ch}
 
-    
-// process bowtie_index_contigs{
-//     tag "$name"
-
-//     label 'intenso'
-
-//     input:
-//         set val(name), file(contig) from filtered_contigs_bt
-//     output:
-//         set val(name), file("*.bt2") into bt_index
-//     script:
-//         """
-//         bowtie2-build --threads ${task.cpus} $contig $name
-//         """
-// }
-
-
-
-
-process align_reads_to_contigs{
+process align_reads_to_contigs {
     tag "$name"
 
     label 'intenso'
@@ -166,10 +146,9 @@ process align_reads_to_contigs{
     publishDir "${params.results}/alignment/${name}", mode: 'copy'
 
     input:
-        // set val(read_name), file(reads) from trimmed_reads_mapping
-        set val(name), file(contigs), val(name2), file(reads) from filtered_fa.combine(trimmed_reads_mapping)
+        set val(name), file(contigs), val(name2), file(reads) from filtered_contigs_bt.combine(trimmed_reads_mapping_ch)
     output:
-        set val(name), file("*.sorted.bam") into alignment_to_dp, alignment_to_pmd
+        set val(name), file("*.sorted.bam") into (alignment_to_dp, alignment_to_pmd)
     script:
         outfile = name+".sorted.bam"
         if (params.pairedEnd) {
@@ -185,49 +164,27 @@ process align_reads_to_contigs{
         }
 }
 
-// process damageProfiler {
-//     tag "$name"
-
-//     label 'expresso'
-
-//     errorStrategy 'ignore'
-
-//     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
-
-//     input:
-//         set val(name), file(bam), file(contig) from alignment_to_dp.join(filtered_contigs_dp)
-//     output:
-//         file("*dmgprof.json") into dmgProf
-//     script:
-//         """
-//         damageprofiler -i $bam -r $contig -o tmp
-//         mv tmp/${name}.sorted/dmgprof.json ${name}.dmgprof.json
-//         """
-// }
-
-
-
 process PMDtools {
-        tag "$name"
+    tag "$name"
 
-        label 'intenso'
+    label 'intenso'
 
-        publishDir "${params.results}/pmdtools/", mode: 'copy', pattern: '*.fastq'
+    publishDir "${params.results}/pmdtools/", mode: 'copy', pattern: '*.fastq'
 
-        input:
-            set val(name), file(bam) from alignment_to_pmd
-        output:
-            set val(name), file("*.fastq") into pmd_assemble, pmd_map
-        script:
-            fwd_out = name+"_pmd_R1.fastq"
-            rev_out = name+"_pmd_R2.fastq"
-            """
-            samtools view -h -F 4 $bam |\\
-            pmdtools -t ${params.pmdscore} --header |\\
-            samtools view -Sbh -@ ${task.cpus} - |\\
-            samtools fastq -1 $fwd_out -2 $rev_out -
-            """
-    }
+    input:
+        set val(name), file(bam) from alignment_to_pmd
+    output:
+        set val(name), file("*.fastq") into (pmd_assemble, pmd_map)
+    script:
+        fwd_out = name+"_pmd_R1.fastq"
+        rev_out = name+"_pmd_R2.fastq"
+        """
+        samtools view -h -F 4 $bam |\\
+        pmdtools -t ${params.pmdscore} --header |\\
+        samtools view -Sbh -@ ${task.cpus} - |\\
+        samtools fastq -1 $fwd_out -2 $rev_out -
+        """
+}
 
 process megahit_pmd {
     tag "$name"
@@ -269,6 +226,27 @@ process multiqc {
         // multiqc -f -d AdapterRemoval DamageProfiler
         // """   
 }
+
+// process damageProfiler {
+//     tag "$name"
+
+//     label 'expresso'
+
+//     errorStrategy 'ignore'
+
+//     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
+
+//     input:
+//         set val(name), file(bam), file(contig) from alignment_to_dp.join(filtered_contigs_dp)
+//     output:
+//         file("*dmgprof.json") into dmgProf
+//     script:
+//         """
+//         damageprofiler -i $bam -r $contig -o tmp
+//         mv tmp/${name}.sorted/dmgprof.json ${name}.dmgprof.json
+//         """
+// }
+
 
 // process miniKraken {
 //     tag "$name"
