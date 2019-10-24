@@ -16,6 +16,7 @@ def helpMessage() {
       --phred                       Specifies the fastq quality encoding (33 | 64). Defaults to ${params.phred}
       --pairedEnd                   Specifies if reads are paired-end (true | false). Default = ${params.pairedEnd}
       --minlen                      Minimum contig length to retain. Default =  ${params.minlen}
+      --pmd_minlen                     Minimum pmd contig length to retain. Default =  ${params.pmd_minlen}
       --pmdscore                    PMDTools score threshold. Default = ${params.pmdscore}
 
     Options:
@@ -53,8 +54,9 @@ process AdapterRemoval {
         set val(name), file(reads) from reads_to_trim
 
     output:
-        set val(name), file('*.trimmed.fastq') into trimmed_reads_assembly, trimmed_reads_mapping
+        set val(name), file('*.trimmed.fastq') into trimmed_reads_assembly, trimmed_reads_mapping, trimmed_reads_fastqc, trimmed_reads_pmd_mapping
         file("*.settings") into adapter_removal_results
+        val(name) into samp_name
 
     script:
         out1 = name+".pair1.trimmed.fastq"
@@ -70,6 +72,21 @@ process AdapterRemoval {
             AdapterRemoval --basename $name --file1 ${reads[0]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $se_out --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
             """
         }    
+}
+
+process fastqc {
+    tag "$fastqc"
+
+    label 'intenso'
+
+    input:
+        set val(name), file(reads) from trimmed_reads_fastqc
+    output:
+        file '*_fastqc.{zip,html}' into fastqc_results
+    script:
+        """
+        fastqc -t ${task.cpus} -q $reads
+        """
 }
 
 process megahit {
@@ -174,7 +191,7 @@ process PMDtools {
     input:
         set val(name), file(bam) from alignment_to_pmd
     output:
-        set val(name), file("*.fastq") into (pmd_assemble, pmd_map)
+        file("*.fastq") into pmd_assemble
     script:
         fwd_out = name+"_pmd_R1.fastq"
         rev_out = name+"_pmd_R2.fastq"
@@ -191,14 +208,15 @@ process megahit_pmd {
 
     label 'bigmem'
 
-    publishDir "${params.results}/pmd_assembly/${name}", mode: 'copy'
+    publishDir "${params.results}/pmd_assembly", mode: 'copy'
 
     input:
-        set val(name), file(reads) from pmd_assemble
+        file(reads) from pmd_assemble.collect()
+        val(name) from samp_name
 
     output:
-        set val(name), file("megahit_out/*.contigs.fa") into pmd_contigs_filter
-        set val(name), file("megahit_out/*.log") into pmd_megahit_log
+        set val(name), file("megahit_out/*.contigs.fa") into pmd_contigs_filter, pmd_contigs_quast
+        file("megahit_out/*.log") into pmd_megahit_log
     script:
         mem = task.memory.toBytes()
         """
@@ -208,44 +226,134 @@ process megahit_pmd {
         """       
 }
 
+process quast {
+    tag "$name"
+
+    label 'intenso'
+
+    publishDir "${params.results}/quast", mode: 'copy'
+
+    input:
+        set val(name), file(contigs) from pmd_contigs_quast
+    output:
+        file("quast_result/report.tsv") into quast_multiqc
+        file("quast_result/*") into quast_results
+    script:
+        """
+        quast -o quast_result -t ${task.cpus} $contigs
+        """
+}
+
+process filter_fasta_pmd {
+    tag "$name"
+
+    label 'intenso'
+
+    publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(fasta) from pmd_contigs_filter
+    output:
+        set val(name), file("*.filtered.fa") into pmd_filtered_fa, pmd_contig_filtered_dp, pmd_contigs_prokka
+    script:
+        filter_out = name+".filtered.fa"
+        """
+        filter_fasta_length.py -min ${params.pmd_minlen} -p ${task.cpus} $fasta -o $filter_out
+        """
+}
+
+process align_reads_to_pmd_contigs {
+    tag "$name"
+
+    label 'intenso'
+
+    errorStrategy 'ignore'
+
+    publishDir "${params.results}/pmd_alignment/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(contigs), val(name2), file(reads) from pmd_filtered_fa.combine(trimmed_reads_pmd_mapping)
+    output:
+        set val(name), file("*.sorted.bam") into pmd_alignment_to_dp
+        file ("*.samtools.stats") into pmd_align_stats
+    script:
+        outfile = name+".sorted.bam"
+        outstats = name + ".samtools.stats"
+        if (params.pairedEnd) {
+            """
+            bowtie2-build --threads ${task.cpus} $contigs $name
+            bowtie2 -x $name -1 ${reads[0]} -2 ${reads[1]} --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
+            samtools stats $outfile > $outstats
+            """
+        } else {
+            """
+            bowtie2-build --threads ${task.cpus} $contigs $name
+            bowtie2 -x $name -U $reads --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
+            samtools stats $outfile > $outstats
+            """
+        }
+}
+
+process prokka {
+    tag "$name"
+
+    label 'intenso'
+
+    publishDir "${params.results}/prokka", mode: 'copy'
+
+    input:
+        set val(name), file(contigs) from pmd_contigs_prokka
+    output:
+        file("prokka_result/*") into prokka_result
+    script:
+        """
+        prokka --metagenome --cpus ${task.cpus} --outdir prokka_result $contigs
+        """
+}
+
+process damageProfiler {
+    tag "$name"
+
+    label 'expresso'
+
+    errorStrategy 'ignore'
+
+    publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(bam), file(contig) from pmd_alignment_to_dp.join(pmd_contig_filtered_dp)
+    output:
+        file("*dmgprof.json") into dmgProf
+    script:
+        """
+        damageprofiler -i $bam -r $contig -o tmp
+        mv tmp/${name}.sorted/dmgprof.json ${name}.dmgprof.json
+        """
+}
+
+
+
 process multiqc {
     label 'ristretto'
 
     publishDir "${params.results}/multiqc", mode: 'copy'
 
     input:
-        // file ('DamageProfiler/*') from dmgProf.collect()
-        file ('AdapterRemoval/*') from adapter_removal_results.collect()
+        file ('damageProfiler/*') from dmgProf.collect()
+        file ('adapterRemoval/*') from adapter_removal_results.collect()
+        file ('fastqc/*') from fastqc_results.collect()
+        file ('samtools/*') from pmd_align_stats.collect()
+        file ('quast/*') from quast_multiqc.collect()
+        file ('prokka/*') from prokka_result.collect()
     output:
         file 'multiqc_report.html' into multiqc_report
     script:
         """
-        multiqc -f -d AdapterRemoval
-        """   
-        // """
-        // multiqc -f -d AdapterRemoval DamageProfiler
-        // """   
+        multiqc -f -d fastqc adapterRemoval damageProfiler samtools quast prokka
+        """
 }
 
-// process damageProfiler {
-//     tag "$name"
 
-//     label 'expresso'
-
-//     errorStrategy 'ignore'
-
-//     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
-
-//     input:
-//         set val(name), file(bam), file(contig) from alignment_to_dp.join(filtered_contigs_dp)
-//     output:
-//         file("*dmgprof.json") into dmgProf
-//     script:
-//         """
-//         damageprofiler -i $bam -r $contig -o tmp
-//         mv tmp/${name}.sorted/dmgprof.json ${name}.dmgprof.json
-//         """
-// }
 
 
 // process miniKraken {
