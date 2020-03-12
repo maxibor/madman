@@ -115,7 +115,7 @@ def filter_contigs(all_contigs, ancient_contigs):
     return(a_contigs)
 
 if __name__ == "__main__":
-    CONTIGS, PYDAMAGE, ALPHA, MINDAMAGE OUTFILE = _get_args()
+    CONTIGS, PYDAMAGE, ALPHA, MINDAMAGE, OUTFILE = _get_args()
 
     if not OUTFILE:
         OUTFILE = basename + ".filtered.fa"
