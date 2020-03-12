@@ -13,6 +13,13 @@ def _get_args():
     parser.add_argument('fasta', help="path to input fasta contig file")
     parser.add_argument('pydamage', help="path to input pydamage csv file")
     parser.add_argument(
+        '-d',
+        dest='damage',
+        default=0.2,
+        type=float,
+        help="Mimimum amount of CtoT damage on the 5' end of the read. Default=0.2"
+    )
+    parser.add_argument(
         '-a',
         dest='alpha',
         default=0.05,
@@ -29,11 +36,12 @@ def _get_args():
     args = parser.parse_args()
 
     contigs = args.fasta
-    pydamage =args.pydamage
-    alpha=args.alpha
+    pydamage = args.pydamage
+    alpha = args.alpha
+    mindamage = args.damage
     outfile = args.output
 
-    return(contigs, pydamage, alpha, outfile)
+    return(contigs, pydamage, alpha, mindamage, outfile)
 
 
 def get_basename(file_name):
@@ -77,7 +85,7 @@ def write_fasta(fasta_dict, outfile):
             fw.write("\n")
         
 
-def get_ancient_contigs(pydamage_report, alpha=0.05):
+def get_ancient_contigs(pydamage_report, alpha=0.05, mindamage=0.2):
     """Get name of contigs passing Q-value for ancient damage
 
     Args:
@@ -87,8 +95,8 @@ def get_ancient_contigs(pydamage_report, alpha=0.05):
         (list): list of contigs name passing threshold
     """        
 
-    d = pd.read_csv(pydamage_report)
-    return(list(d.query("qvalue >= 0.05").index))
+    d = pd.read_csv(pydamage_report, index_col='reference')
+    return(list(d.query(f"qvalue <= {alpha} and geom_pmax >= {mindamage}").index))
 
 def filter_contigs(all_contigs, ancient_contigs):
     """Filter contigs if in ancient contigs
@@ -99,11 +107,12 @@ def filter_contigs(all_contigs, ancient_contigs):
     Returns:
         (dict): ancient contigs, seqname as key, sequence as value
     """
-    acontigs = {}
+    a_contigs = {}
     for c in all_contigs:
-        if c.split()[0] in ancient_contigs:
-            acontigs[c] = all_contigs[c]
-    return(all_contigs)
+        cname = c.split()[0][1:]
+        if cname in ancient_contigs:
+            a_contigs[c] = all_contigs[c]
+    return(a_contigs)
 
 if __name__ == "__main__":
     CONTIGS, PYDAMAGE, ALPHA, OUTFILE = _get_args()
