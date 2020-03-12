@@ -1,4 +1,4 @@
-name: env-megahit-nf
+name: megahit-nf-0.1-dev
 channels:
   - conda-forge
   - bioconda
@@ -14,5 +14,13 @@ dependencies:
   - quast
   - prokka
   - multiqc
-prefix: /projects1/users/borry/15_miniconda3/envs/env-megahit-nf
-
+  - click
+  - numpy
+  - pandas
+  - pip
+  - pysam
+  - python>=3.6
+  - scipy
+  - statsmodels
+  - pip:
+    - git+ssh://git@github.com/maxibor/pydamage.git
