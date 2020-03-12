@@ -115,14 +115,14 @@ def filter_contigs(all_contigs, ancient_contigs):
     return(a_contigs)
 
 if __name__ == "__main__":
-    CONTIGS, PYDAMAGE, ALPHA, OUTFILE = _get_args()
+    CONTIGS, PYDAMAGE, ALPHA, MINDAMAGE OUTFILE = _get_args()
 
     if not OUTFILE:
         OUTFILE = basename + ".filtered.fa"
 
     basename = get_basename(PYDAMAGE)
     all_contigs = parse_fasta(CONTIGS)
-    ancient_contigs_names = get_ancient_contigs(PYDAMAGE, ALPHA)
+    ancient_contigs_names = get_ancient_contigs(PYDAMAGE, ALPHA, MINDAMAGE)
     ancient_contigs = filter_contigs(all_contigs, ancient_contigs_names)
     write_fasta(ancient_contigs, OUTFILE)
     
