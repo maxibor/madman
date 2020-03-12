@@ -13,14 +13,14 @@ def helpMessage() {
       --reads                       Path to input data (must be surrounded with quotes)
 
     Settings:
-      --phred                       Specifies the fastq quality encoding (33 | 64). Defaults to ${params.phred}
-      --pairedEnd                   Specifies if reads are paired-end (true | false). Default = ${params.pairedEnd}
-      --minlen                      Minimum contig length to retain. Default =  ${params.minlen}
-      --pmd_minlen                     Minimum pmd contig length to retain. Default =  ${params.pmd_minlen}
-      --pmdscore                    PMDTools score threshold. Default = ${params.pmdscore}
+      --phred                       Specifies the fastq quality encoding (33 | 64). Default: ${params.phred}
+      --paired_end                  Specifies if reads are paired-end (true | false). Default: ${params.paired_end}
+      --minlen                      Minimum contig length to retain. Default:  ${params.minlen}
+      --minread                     Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
+      --mindamage                   Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
 
     Options:
-      --results                     The output directory where the results will be saved. Defaults to ${params.results}
+      --results                     The output directory where the results will be saved. Default: ${params.results}
       --help  --h                   Shows this help page
     """.stripIndent()
 }
@@ -32,15 +32,22 @@ if (params.help){
 }
 
 Channel
-    .fromFilePairs( params.reads, size: params.pairedEnd ? 2 : 1 )
+    .fromFilePairs( params.reads, size: params.paired_end ? 2 : 1 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\n" }
-	.set {reads_to_trim}
+	.set {ch_reads_to_trim}
+
+ch_multiqc_config = file(params.multiqc_config, checkIfExists: true)
 
 log.info "================================================================"
 def summary = [:]
 summary['Reads'] = params.reads
+summary['phred'] = params.phred
+summary['paired_end'] = params.paired_end
 summary['minlen'] = params.minlen
+summary['minread'] = params.minread
+summary['results'] = params.results
 summary['Config Profile'] = workflow.profile
+if(workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 log.info summary.collect { k,v -> "${k.padRight(25)}: $v" }.join("\n")
 log.info "----------------------------------------------------------------"
 
@@ -51,11 +58,11 @@ process AdapterRemoval {
     label 'intenso'
 
     input:
-        set val(name), file(reads) from reads_to_trim
+        set val(name), file(reads) from ch_reads_to_trim
 
     output:
-        set val(name), file('*.trimmed.fastq') into trimmed_reads_assembly, trimmed_reads_mapping, trimmed_reads_fastqc, trimmed_reads_pmd_mapping
-        file("*.settings") into adapter_removal_results
+        set val(name), file('*.trimmed.fastq') into ch_trimmed_reads_fastqc, ch_trimmed_reads_assembly, ch_trimmed_reads_mapping
+        file("*.settings") into ch_adapter_removal_results
         val(name) into samp_name
 
     script:
@@ -63,7 +70,7 @@ process AdapterRemoval {
         out2 = name+".pair2.trimmed.fastq"
         se_out = name+".trimmed.fastq"
         settings = name+".settings"
-        if (params.pairedEnd){
+        if (params.paired_end){
             """
             AdapterRemoval --basename $name --file1 ${reads[0]} --file2 ${reads[1]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $out1 --output2 $out2 --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
             """
@@ -75,14 +82,14 @@ process AdapterRemoval {
 }
 
 process fastqc {
-    tag "$fastqc"
+    tag "$name"
 
     label 'intenso'
 
     input:
-        set val(name), file(reads) from trimmed_reads_fastqc
+        set val(name), file(reads) from ch_trimmed_reads_fastqc
     output:
-        file '*_fastqc.{zip,html}' into fastqc_results
+        file '*_fastqc.{zip,html}' into ch_fastqc_results
     script:
         """
         fastqc -t ${task.cpus} -q $reads
@@ -99,11 +106,11 @@ process megahit {
     publishDir "${params.results}/assembly/${name}", mode: 'copy'
 
     input:
-        set val(name), file(reads) from trimmed_reads_assembly
+        set val(name), file(reads) from ch_trimmed_reads_assembly
 
     output:
-        set val(name), file("megahit_out/*.contigs.fa") into contigs_filter
-        set val(name), file("megahit_out/*.log") into megahit_log
+        set val(name), file("megahit_out/*.contigs.fa") into ch_contigs_filter, ch_contigs_quast
+        set val(name), file("megahit_out/*.log") into ch_megahit_log
     script:
         mem = task.memory.toBytes()
         """
@@ -111,7 +118,24 @@ process megahit {
         """       
 }
 
-process filter_fasta {
+process quast {
+    tag "$name"
+
+    label 'intenso'
+
+    publishDir "${params.results}/quast/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(contigs) from ch_contigs_quast
+    output:
+        file("quast_result") into ch_quast_results
+    script:
+        """
+        quast -o quast_result -t ${task.cpus} $contigs
+        """
+}
+
+process filter_contigs_size {
     tag "$name"
 
     label 'intenso'
@@ -119,41 +143,15 @@ process filter_fasta {
     publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
 
     input:
-        set val(name), file(fasta) from contigs_filter
+        set val(name), file(fasta) from ch_contigs_filter
     output:
-        set val(name), file("*.filtered.fa") into filtered_fa
+        set val(name), file("*.size_filtered.fa") into ch_contigs_filter_size, ch_contigs_filter_ancient
     script:
-        filter_out = name+".filtered.fa"
+        filter_out = name+".size_filtered.fa"
         """
-        filter_fasta_length.py -min ${params.minlen} -p ${task.cpus} $fasta -o $filter_out
+        filter_contigs_length.py -min ${params.minlen} -p ${task.cpus} $fasta -o $filter_out
         """
 }
-
-process split_fasta {
-    tag "$name"
-
-    label 'intenso'
-
-    publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
-
-    input:
-        set val(name), file(fasta) from filtered_fa
-    output:
-        file("*.split.fa") into split_contigs
-    script:
-        """
-        split_fasta.py -p ${task.cpus} $fasta
-        """
-}
-
-split_contigs
-    .flatten()
-    .map { it -> tuple(it.baseName, it) }  
-    .into {filtered_contigs_bt; filtered_contigs_dp}
-
-trimmed_reads_mapping
-    .map {it -> it}
-    .set {trimmed_reads_mapping_ch}
 
 process align_reads_to_contigs {
     tag "$name"
@@ -165,12 +163,12 @@ process align_reads_to_contigs {
     publishDir "${params.results}/alignment/${name}", mode: 'copy'
 
     input:
-        set val(name), file(contigs), val(name2), file(reads) from filtered_contigs_bt.combine(trimmed_reads_mapping_ch)
+        set val(name), file(contigs), val(name2), file(reads) from  ch_contigs_filter_size.combine(ch_trimmed_reads_mapping)
     output:
-        set val(name), file("*.sorted.bam") into (alignment_to_dp, alignment_to_pmd)
+        set val(name), file("*.sorted.bam") into (ch_alignment_to_dp, ch_alignment_to_pydamage)
     script:
         outfile = name+".sorted.bam"
-        if (params.pairedEnd) {
+        if (params.paired_end) {
             """
             bowtie2-build --threads ${task.cpus} $contigs $name
             bowtie2 -x $name -1 ${reads[0]} -2 ${reads[1]} --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
@@ -191,14 +189,72 @@ process pydamage {
     publishDir "${params.results}/pydamage/", mode: 'copy'
 
     input:
-        set val(name), file(bam) from alignment_to_pmd
+        set val(name), file(bam) from ch_alignment_to_pydamage
     output:
-        set val(name), file("*.csv") into pmd_stats
+        set val(name), file("*.csv") into ch_pydamage_stats
     script:
-        output = name+".pydamage.csv"
+        output = name+".pydamage"
         """
         samtools index $bam
         pydamage -p ${task.cpus} -m ${params.minread} -o $output $bam
+        """
+}
+
+process filter_contigs_damage {
+    tag "$name"
+
+    label 'ristretto'
+
+    echo true
+
+    publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(pydamage_csv), val(name2), file(contigs) from ch_pydamage_stats.combine(ch_contigs_filter_ancient)
+    output:
+        set val(name), file("*.ancient_filtered.fa") into ch_filtered_ancient_contigs
+    script:
+        outfile = name + ".ancient_filtered.fa"
+        """
+        filter_contigs_damage.py -d ${params.mindamage} -o $outfile $contigs $pydamage_csv
+        """
+}
+
+process prokka {
+    tag "$name"
+
+    label 'intenso'
+
+    errorStrategy 'ignore'
+
+    publishDir "${params.results}/prokka", mode: 'copy'
+
+    input:
+        set val(name), file(contigs) from ch_filtered_ancient_contigs
+    output:
+        file("${name}") into ch_prokka_results
+    script:
+        """
+        prokka --metagenome --cpus ${task.cpus} --outdir $name --prefix $name $contigs
+        """
+}
+
+process multiqc {
+    label 'ristretto'
+
+    publishDir "${params.results}", mode: 'copy'
+
+    input:
+        file ('adapterRemoval/*') from ch_adapter_removal_results.collect()
+        file ('fastqc/*') from ch_fastqc_results.collect()
+        file ('quast/*') from ch_quast_results.collect()
+        file ('prokka/*') from ch_prokka_results.collect()
+        file(multiqc_conf) from ch_multiqc_config
+    output:
+        file 'multiqc_report.html' into multiqc_report
+    script:
+        """
+        multiqc -f -d fastqc adapterRemoval quast prokka -c $multiqc_conf
         """
 }
 
@@ -225,114 +281,6 @@ process pydamage {
 //         """
 // }
 
-// process megahit_pmd {
-//     tag "$name"
-
-//     label 'bigmem'
-
-//     publishDir "${params.results}/pmd_assembly", mode: 'copy'
-
-//     input:
-//         file(reads) from pmd_assemble.collect()
-//         val(name) from samp_name
-
-//     output:
-//         set val(name), file("megahit_out/*.contigs.fa") into pmd_contigs_filter, pmd_contigs_quast
-//         file("megahit_out/*.log") into pmd_megahit_log
-//     script:
-//         mem = task.memory.toBytes()
-//         """
-//         cat *_pmd_R1.fastq > forward.fq
-//         cat *_pmd_R2.fastq > reverse.fq
-//         megahit -1 forward.fq -2 reverse.fq -t ${task.cpus} -m $mem --out-prefix $name
-//         """       
-// }
-
-// process quast {
-//     tag "$name"
-
-//     label 'intenso'
-
-//     publishDir "${params.results}/quast", mode: 'copy'
-
-//     input:
-//         set val(name), file(contigs) from pmd_contigs_quast
-//     output:
-//         file("quast_result/report.tsv") into quast_multiqc
-//         file("quast_result/*") into quast_results
-//     script:
-//         """
-//         quast -o quast_result -t ${task.cpus} $contigs
-//         """
-// }
-
-// process filter_fasta_pmd {
-//     tag "$name"
-
-//     label 'intenso'
-
-//     publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
-
-//     input:
-//         set val(name), file(fasta) from pmd_contigs_filter
-//     output:
-//         set val(name), file("*.filtered.fa") into pmd_filtered_fa, pmd_contig_filtered_dp, pmd_contigs_prokka
-//     script:
-//         filter_out = name+".filtered.fa"
-//         """
-//         filter_fasta_length.py -min ${params.pmd_minlen} -p ${task.cpus} $fasta -o $filter_out
-//         """
-// }
-
-// process align_reads_to_pmd_contigs {
-//     tag "$name"
-
-//     label 'intenso'
-
-//     errorStrategy 'ignore'
-
-//     publishDir "${params.results}/pmd_alignment/${name}", mode: 'copy'
-
-//     input:
-//         set val(name), file(contigs), val(name2), file(reads) from pmd_filtered_fa.combine(trimmed_reads_pmd_mapping)
-//     output:
-//         set val(name), file("*.sorted.bam") into pmd_alignment_to_dp
-//         file ("*.samtools.stats") into pmd_align_stats
-//     script:
-//         outfile = name+".sorted.bam"
-//         outstats = name + ".samtools.stats"
-//         if (params.pairedEnd) {
-//             """
-//             bowtie2-build --threads ${task.cpus} $contigs $name
-//             bowtie2 -x $name -1 ${reads[0]} -2 ${reads[1]} --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
-//             samtools stats $outfile > $outstats
-//             """
-//         } else {
-//             """
-//             bowtie2-build --threads ${task.cpus} $contigs $name
-//             bowtie2 -x $name -U $reads --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
-//             samtools stats $outfile > $outstats
-//             """
-//         }
-// }
-
-// process prokka {
-//     tag "$name"
-
-//     label 'intenso'
-
-//     publishDir "${params.results}/prokka", mode: 'copy'
-
-//     input:
-//         set val(name), file(contigs) from pmd_contigs_prokka
-//     output:
-//         file("prokka_result/*") into prokka_result
-//     script:
-//         """
-//         prokka --metagenome --cpus ${task.cpus} --outdir prokka_result $contigs
-//         """
-// }
-
 // process damageProfiler {
 //     tag "$name"
 
@@ -350,28 +298,6 @@ process pydamage {
 //         """
 //         damageprofiler -i $bam -r $contig -o tmp
 //         mv tmp/${name}.sorted/dmgprof.json ${name}.dmgprof.json
-//         """
-// }
-
-
-
-// process multiqc {
-//     label 'ristretto'
-
-//     publishDir "${params.results}/multiqc", mode: 'copy'
-
-//     input:
-//         file ('damageProfiler/*') from dmgProf.collect()
-//         file ('adapterRemoval/*') from adapter_removal_results.collect()
-//         file ('fastqc/*') from fastqc_results.collect()
-//         file ('samtools/*') from pmd_align_stats.collect()
-//         file ('quast/*') from quast_multiqc.collect()
-//         file ('prokka/*') from prokka_result.collect()
-//     output:
-//         file 'multiqc_report.html' into multiqc_report
-//     script:
-//         """
-//         multiqc -f -d fastqc adapterRemoval damageProfiler samtools quast prokka
 //         """
 // }
 
@@ -395,7 +321,7 @@ process pydamage {
 //     script:
 //         out = name+".kraken.out"
 //         kreport = name+".kreport"
-//         if (params.pairedEnd){
+//         if (params.paired_end){
 //             """
 //             kraken2 --db ${params.krakendb} --threads ${task.cpus} --output $out --report $kreport --paired ${reads[0]} ${reads[1]}
 //             """    
