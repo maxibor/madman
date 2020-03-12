@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/maxibor/megahit-nf.svg?token=pwT9AgYi4qJY4LTp9WUy&branch=master)](https://travis-ci.com/maxibor/megahit-nf)
+![megahit_nf_CI](https://github.com/maxibor/megahit-nf/workflows/megahit_nf_CI/badge.svg)
 
 # megahit-nf
 
