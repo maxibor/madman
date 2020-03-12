@@ -30,6 +30,11 @@ Use this to specify the location of your input FastQ files. For example:
 
 ## Arguments
 
+
+### `--paired_end`
+
+Specifies if reads are paired-end (true | false). Default: `true`
+
 ### `--phred`
 
 Fastq quality encoding. Default: `33`
