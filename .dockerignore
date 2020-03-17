@@ -1,5 +1,6 @@
-work
-results
+work/
+results/
+test_results/
 .nextflow.log*
 test
 README.md
