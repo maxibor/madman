@@ -245,16 +245,16 @@ process multiqc {
     publishDir "${params.results}", mode: 'copy'
 
     input:
-        file ('adapterRemoval/*') from ch_adapter_removal_results.collect()
-        file ('fastqc/*') from ch_fastqc_results.collect()
-        file ('quast/*') from ch_quast_results.collect()
-        file ('prokka/*') from ch_prokka_results.collect()
+        file ('adapterRemoval/*') from ch_adapter_removal_results.collect().ifEmpty([])
+        file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
+        file ('quast/*') from ch_quast_results.collect().ifEmpty([])
+        file ('prokka/*') from ch_prokka_results.collect().ifEmpty([])
         file(multiqc_conf) from ch_multiqc_config
     output:
         file 'multiqc_report.html' into multiqc_report
     script:
         """
-        multiqc -f -d fastqc adapterRemoval quast prokka -c $multiqc_conf
+        multiqc -c $multiqc_conf .
         """
 }
 
