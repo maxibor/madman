@@ -39,6 +39,10 @@ Specifies if reads are paired-end (true | false). Default: `true`
 
 Fastq quality encoding. Default: `33`
 
+### `assembly_tool`
+
+Choose *de novo* assembly tool. Either `megahit` or `metaspades`
+
 ### `--minlen`
 
 Minimum length of contig to keep it. Default: `500`

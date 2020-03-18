@@ -18,6 +18,7 @@ def helpMessage() {
       --minlen                      Minimum contig length to retain. Default:  ${params.minlen}
       --minread                     Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
       --mindamage                   Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
+      --assembly_tool               Choose de novo assembly tool. (megahit | metaspades). Default: ${params.assembly_tool}
 
     Options:
       --results                     The output directory where the results will be saved. Default: ${params.results}
@@ -96,20 +97,34 @@ process fastqc {
         """
 }
 
+if (params.assembly_tool == 'megahit') {
+  ch_trimmed_reads_assembly
+  .set {ch_trimmed_reads_assembly_megahit}
+  ch_trimmed_reads_assembly_metaspades = Channel.empty()
 
+} else if (params.assembly_tool == 'metaspades') {
+  ch_trimmed_reads_assembly
+  .set {ch_trimmed_reads_assembly_metaspades}
+  ch_trimmed_reads_assembly_megahit = Channel.empty()
+}
 
 process megahit {
     tag "$name"
 
     label 'bigmem'
 
+    errorStrategy 'ignore'
+
+    when:
+        params.assembly_tool == 'megahit'
+
     publishDir "${params.results}/assembly/${name}", mode: 'copy'
 
     input:
-        set val(name), file(reads) from ch_trimmed_reads_assembly
+        set val(name), file(reads) from ch_trimmed_reads_assembly_megahit
 
     output:
-        set val(name), file("megahit_out/*.contigs.fa") into ch_contigs_filter, ch_contigs_quast
+        set val(name), file("megahit_out/*.contigs.fa") into ch_megahit_filter, ch_megahit_quast
         set val(name), file("megahit_out/*.log") into ch_megahit_log
     script:
         mem = task.memory.toBytes()
@@ -118,20 +133,52 @@ process megahit {
         """       
 }
 
+process metaspades {
+    tag "$name"
+
+    label 'bigmem'
+
+    errorStrategy 'ignore'
+
+    when: 
+        params.assembly_tool == 'metaspades'
+
+    publishDir "${params.results}/assembly/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(reads) from ch_trimmed_reads_assembly_metaspades
+
+    output:
+        set val(name), file() into ch_metaspades_filter, ch_metaspades_quast
+        set val(name), file() into ch_metaspades_log
+    script:
+        mem = task.memory.toBytes()
+        """
+        
+        """ 
+}
+
+ch_megahit_filter.mix(ch_metaspades_filter).set{ch_contigs_filter}
+ch_megahit_quast.mix(ch_metaspades_quast).set{ch_contigs_quast}
+ch_megahit_log.mix(ch_metaspades_log).set{ch_contigs_log}
+
 process quast {
     tag "$name"
 
     label 'intenso'
+
+    errorStrategy 'ignore'
 
     publishDir "${params.results}/quast/${name}", mode: 'copy'
 
     input:
         set val(name), file(contigs) from ch_contigs_quast
     output:
-        file("quast_result") into ch_quast_results
+        file("*_quast") into ch_quast_results
     script:
+        outdir = name+"_quast"
         """
-        quast -o quast_result -t ${task.cpus} $contigs
+        quast -o $outdir -t ${task.cpus} $contigs
         """
 }
 
@@ -139,6 +186,8 @@ process filter_contigs_size {
     tag "$name"
 
     label 'intenso'
+
+    errorStrategy 'ignore'
 
     publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
 
@@ -163,7 +212,7 @@ process align_reads_to_contigs {
     publishDir "${params.results}/alignment/${name}", mode: 'copy'
 
     input:
-        set val(name), file(contigs), val(name2), file(reads) from  ch_contigs_filter_size.combine(ch_trimmed_reads_mapping)
+        set val(name), file(contigs), val(name2), file(reads) from  ch_contigs_filter_size.merge(ch_trimmed_reads_mapping)
     output:
         set val(name), file("*.sorted.bam") into (ch_alignment_to_dp, ch_alignment_to_pydamage)
     script:
@@ -188,6 +237,8 @@ process pydamage {
 
     publishDir "${params.results}/pydamage/", mode: 'copy'
 
+    errorStrategy 'ignore'
+
     input:
         set val(name), file(bam) from ch_alignment_to_pydamage
     output:
@@ -205,12 +256,14 @@ process filter_contigs_damage {
 
     label 'ristretto'
 
+    errorStrategy 'ignore'
+
     echo true
 
     publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
 
     input:
-        set val(name), file(pydamage_csv), val(name2), file(contigs) from ch_pydamage_stats.combine(ch_contigs_filter_ancient)
+        set val(name), file(pydamage_csv), val(name2), file(contigs) from ch_pydamage_stats.merge(ch_contigs_filter_ancient)
     output:
         set val(name), file("*.ancient_filtered.fa") into ch_filtered_ancient_contigs
     script:
