@@ -39,7 +39,7 @@ Specifies if reads are paired-end (true | false). Default: `true`
 
 Fastq quality encoding. Default: `33`
 
-### `assembly_tool`
+### `--assembly_tool`
 
 Choose *de novo* assembly tool. Either `megahit` or `metaspades`
 
@@ -120,10 +120,17 @@ Mandatory arguments:
 
 Settings:
   --phred                       Specifies the fastq quality encoding (33 | 64). Default: 33
-  --paired_end                   Specifies if reads are paired-end (true | false). Default: null
-  --minlen                      Minimum contig length to retain. Default:  1000
-  --minread                     Minimum number of reads aligned to contig to consider contig. Default: 200
+  --paired_end                  Specifies if reads are paired-end (true | false). Default: true
+  --minlen                      Minimum contig length to retain. Default:  500
+  --minread                     Minimum number of reads aligned to contig to consider contig. Default: 150
+  --mindamage                   Mimimum amount of CtoT damage on the 5' end of the read. Default: 0.2
+  --assembly_tool               Choose de novo assembly tool. (megahit | metaspades). Default: megahit
 
 Options:
   --results                     The output directory where the results will be saved. Default: ./results
+  --help  --h                   Shows this help page
 ```
+
+## Workflow
+
+![](assets/misc/dag.png)
