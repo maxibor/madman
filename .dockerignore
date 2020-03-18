@@ -2,6 +2,7 @@ work/
 results/
 test_results/
 .nextflow.log*
+assets/misc/
 test
 README.md
 LICENSE

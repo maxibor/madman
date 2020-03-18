@@ -44,6 +44,7 @@ def summary = [:]
 summary['Reads'] = params.reads
 summary['phred'] = params.phred
 summary['paired_end'] = params.paired_end
+summary['assembly tool'] = params.assembly_tool 
 summary['minlen'] = params.minlen
 summary['minread'] = params.minread
 summary['results'] = params.results
@@ -118,7 +119,7 @@ process megahit {
     when:
         params.assembly_tool == 'megahit'
 
-    publishDir "${params.results}/assembly/${name}", mode: 'copy'
+    publishDir "${params.results}/assembly/megahit/${name}", mode: 'copy'
 
     input:
         set val(name), file(reads) from ch_trimmed_reads_assembly_megahit
@@ -143,18 +144,24 @@ process metaspades {
     when: 
         params.assembly_tool == 'metaspades'
 
-    publishDir "${params.results}/assembly/${name}", mode: 'copy'
+    publishDir "${params.results}/assembly/metaspades", mode: 'copy'
 
     input:
         set val(name), file(reads) from ch_trimmed_reads_assembly_metaspades
 
     output:
-        set val(name), file() into ch_metaspades_filter, ch_metaspades_quast
-        set val(name), file() into ch_metaspades_log
+        set val(name), file("$name/contigs.fasta") into ch_metaspades_filter, ch_metaspades_quast
+        set val(name), file("$name") into ch_metaspades_log
     script:
-        mem = task.memory.toBytes()
+        mem = task.memory.toGiga()
         """
-        
+        spades.py --meta \
+                  -1 ${reads[0]} \
+                  -2 ${reads[1]} \
+                  -t ${task.cpus} \
+                  -m $mem \
+                  --phred-offset ${params.phred} \
+                  -o $name
         """ 
 }
 

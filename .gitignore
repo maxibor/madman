@@ -5,8 +5,7 @@ null
 work
 results
 *_results
-._dag.png
-dag*
+dag.png.*
 
 
 # Byte-compiled / optimized / DLL files
