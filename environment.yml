@@ -1,4 +1,4 @@
-name: megahit-nf-0.1-dev
+name: madman-0.1-dev
 channels:
   - conda-forge
   - bioconda
@@ -6,6 +6,7 @@ channels:
 dependencies:
   - adapterremoval
   - fastqc
+  - fastp
   - samtools
   - pmdtools
   - damageprofiler

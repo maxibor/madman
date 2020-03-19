@@ -1,4 +1,4 @@
-name: megahit_nf_CI
+name: madman_nf_CI
 # This workflow is triggered on pushes and PRs to the repository.
 # It runs the pipeline with the minimal test dataset to check that it completes without any syntax errors
 on: [push, pull_request]
@@ -21,7 +21,7 @@ jobs:
           sudo mv nextflow /usr/local/bin/
       - name: Pull docker image
         run: |
-          docker pull maxibor/megahit-nf:0.1-dev
+          docker pull maxibor/madman:dev
       - name: Run pipeline with test data
         run: |
           nextflow run . -profile docker,test

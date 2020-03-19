@@ -1,6 +1,6 @@
-![megahit_nf_CI](https://github.com/maxibor/megahit-nf/workflows/megahit_nf_CI/badge.svg)
+![madman_nf_CI](https://github.com/maxibor/madman/workflows/madman_nf_CI/badge.svg)
 
-# megahit-nf
+# MADMAN: **M**etagenomic **A**ssembly of **A**ncient **D**a**M**aged reads with **N**extflow
 
 Nextflow assembly pipeline for ancient DNA
 
@@ -11,7 +11,7 @@ Nextflow assembly pipeline for ancient DNA
 ## Usage
 
 ```
-nextflow run maxibor/megahit-nf -profile docker --reads "/path/to/paired_end_reads_*.{1,2}.fastq.gz"
+nextflow run maxibor/madman -profile docker --reads "/path/to/paired_end_reads_*.{1,2}.fastq.gz"
 ```
 
 ## Input
@@ -38,6 +38,10 @@ Specifies if reads are paired-end (true | false). Default: `true`
 ### `--phred`
 
 Fastq quality encoding. Default: `33`
+
+### `--complexity_filter_poly_g_min`
+
+Define the minimum length of a poly-G tail to begin low complexity trimming. Default: `10`
 
 ### `--assembly_tool`
 
@@ -105,16 +109,16 @@ Contains the [prokka](https://github.com/tseemann/prokka) annotation report file
 ## Help
 
 ```
-$ nextflow run maxibor/megahit-nf --help
+$ nextflow run maxibor/madman --help
 N E X T F L O W  ~  version 19.10.0
-Launching `maxibor/megahit-nf` [maniac_hypatia] - revision: cf6cdbd49c
-megahit-nf: simple Megahit assembler Nextflow pipeline
- Homepage: https://github.com/maxibor/megahit-nf
+Launching `maxibor/madman` [maniac_hypatia] - revision: cf6cdbd49c
+madman: simple Megahit assembler Nextflow pipeline
+ Homepage: https://github.com/maxibor/madman
  Author: Maxime Borry <borry@shh.mpg.de>
 =========================================
 Usage:
 The typical command for running the pipeline is as follows:
-nextflow run maxibor/megahit-nf --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
+nextflow run maxibor/madman --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
 Mandatory arguments:
   --reads                       Path to input data (must be surrounded with quotes)
 
