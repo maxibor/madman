@@ -1,5 +1,6 @@
 top_modules:
     - 'adapterRemoval'
     - 'fastqc'
+    - 'fastp'
     - 'quast'
     - 'prokka'

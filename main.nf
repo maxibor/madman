@@ -2,27 +2,28 @@
 
 def helpMessage() {
     log.info"""
-     megahit-nf: simple Megahit assembler Nextflow pipeline
-     Homepage: https://github.com/maxibor/megahit-nf
+     MADMAN: Metagenomic Assembly of Ancient DaMaged reads with Nextflow
+     Homepage: https://github.com/maxibor/madman
      Author: Maxime Borry <borry@shh.mpg.de>
     =========================================
     Usage:
     The typical command for running the pipeline is as follows:
-    nextflow run maxibor/megahit-nf --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
+    nextflow run maxibor/madman --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
     Mandatory arguments:
-      --reads                       Path to input data (must be surrounded with quotes)
+      --reads                           Path to input data (must be surrounded with quotes)
 
     Settings:
-      --phred                       Specifies the fastq quality encoding (33 | 64). Default: ${params.phred}
-      --paired_end                  Specifies if reads are paired-end (true | false). Default: ${params.paired_end}
-      --minlen                      Minimum contig length to retain. Default:  ${params.minlen}
-      --minread                     Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
-      --mindamage                   Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
-      --assembly_tool               Choose de novo assembly tool. (megahit | metaspades). Default: ${params.assembly_tool}
+      --phred                           Specifies the fastq quality encoding (33 | 64). Default: ${params.phred}
+      --paired_end                      Specifies if reads are paired-end (true | false). Default: ${params.paired_end}
+      --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: ${params.complexity_filter_poly_g_min}
+      --minlen                          Minimum contig length to retain. Default:  ${params.minlen}
+      --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
+      --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
+      --assembly_tool                   Choose de novo assembly tool. (megahit | metaspades). Default: ${params.assembly_tool}
 
     Options:
-      --results                     The output directory where the results will be saved. Default: ${params.results}
-      --help  --h                   Shows this help page
+      --results                         The output directory where the results will be saved. Default: ${params.results}
+      --help  --h                       Shows this help page
     """.stripIndent()
 }
 
@@ -57,13 +58,13 @@ log.info "----------------------------------------------------------------"
 process AdapterRemoval {
     tag "$name"
 
-    label 'intenso'
+    label 'expresso'
 
     input:
         set val(name), file(reads) from ch_reads_to_trim
 
     output:
-        set val(name), file('*.trimmed.fastq') into ch_trimmed_reads_fastqc, ch_trimmed_reads_assembly, ch_trimmed_reads_mapping
+        set val(name), file('*.trimmed.fastq') into ch_trimmed_reads_fastqc, ch_trimmed_reads_fastp
         file("*.settings") into ch_adapter_removal_results
         val(name) into samp_name
 
@@ -83,6 +84,31 @@ process AdapterRemoval {
         }    
 }
 
+process fastp {
+    tag "$name"
+
+    label 'expresso'
+
+    input:
+        set val(name), file(reads) from ch_trimmed_reads_fastp
+
+    output:
+        set val(name), file("*.fq.gz") into ch_trimmed_reads_assembly, ch_trimmed_reads_mapping_pre
+        file("*.json") into ch_fastp_for_multiqc
+
+    script:
+    if (params.paired_end) {
+    """
+    fastp --in1 ${reads[0]} --in2 ${reads[1]} --out1 "${reads[0].baseName}.fq.gz" --out2 "${reads[1].baseName}.fq.gz" -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json "${reads[0].baseName}"_fastp.json 
+    """
+    } else {
+    """
+    fastp --in1 ${reads[0]} --out1 "${reads[0].baseName}.fq.gz" -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json "${reads[0].baseName}"_fastp.json 
+    """
+    }
+}
+
+
 process fastqc {
     tag "$name"
 
@@ -98,15 +124,31 @@ process fastqc {
         """
 }
 
-if (params.assembly_tool == 'megahit') {
-  ch_trimmed_reads_assembly
-  .set {ch_trimmed_reads_assembly_megahit}
-  ch_trimmed_reads_assembly_metaspades = Channel.empty()
+// Channel duplication and tuple index renaming to execute megahit and/or metaspades
+
+ch_trimmed_reads_mapping_pre.into {ch_trimmed_reads_mapping_megahit_pre; ch_trimmed_reads_mapping_metaspades_pre}
+
+ch_trimmed_reads_mapping_megahit_pre
+    .map {it -> [it[0]+"_megahit",[file(it[1][0]),file(it[1][1])]]}
+    .set {ch_trimmed_reads_mapping_megahit}
+ch_trimmed_reads_mapping_metaspades_pre
+    .map {it -> [it[0]+"_metaspades",[file(it[1][0]),file(it[1][1])]]}
+    .set {ch_trimmed_reads_mapping_metaspades}
+
+ch_trimmed_reads_mapping_megahit.mix(ch_trimmed_reads_mapping_metaspades).set{ch_trimmed_reads_mapping}
+
+
+if (params.assembly_tool.toString().contains('megahit') && params.assembly_tool.toString().contains('metaspades')) {
+    ch_trimmed_reads_assembly.into {ch_trimmed_reads_assembly_megahit; ch_trimmed_reads_assembly_metaspades}
 
 } else if (params.assembly_tool == 'metaspades') {
-  ch_trimmed_reads_assembly
-  .set {ch_trimmed_reads_assembly_metaspades}
+    ch_trimmed_reads_assembly
+        .set {ch_trimmed_reads_assembly_metaspades}
   ch_trimmed_reads_assembly_megahit = Channel.empty()
+} else if (params.assembly_tool == 'megahit') {
+    ch_trimmed_reads_assembly
+        .set {ch_trimmed_reads_assembly_megahit}
+    ch_trimmed_reads_assembly_metaspades = Channel.empty()
 }
 
 process megahit {
@@ -117,7 +159,7 @@ process megahit {
     errorStrategy 'ignore'
 
     when:
-        params.assembly_tool == 'megahit'
+        params.assembly_tool.toString().contains('megahit')
 
     publishDir "${params.results}/assembly/megahit/${name}", mode: 'copy'
 
@@ -125,12 +167,14 @@ process megahit {
         set val(name), file(reads) from ch_trimmed_reads_assembly_megahit
 
     output:
-        set val(name), file("megahit_out/*.contigs.fa") into ch_megahit_filter, ch_megahit_quast
-        set val(name), file("megahit_out/*.log") into ch_megahit_log
+        set val(name2), file("megahit_out/*.megahit_contigs.fa") into ch_megahit_filter, ch_megahit_quast
+        set val(name2), file("megahit_out/*.log") into ch_megahit_log
     script:
         mem = task.memory.toBytes()
+        name2 = name+"_megahit"
         """
         megahit -1 ${reads[0]} -2 ${reads[1]} -t ${task.cpus} -m $mem --out-prefix $name
+        mv megahit_out/${name}.contigs.fa megahit_out/${name}.megahit_contigs.fa
         """       
 }
 
@@ -142,7 +186,7 @@ process metaspades {
     errorStrategy 'ignore'
 
     when: 
-        params.assembly_tool == 'metaspades'
+        params.assembly_tool.toString().contains('metaspades')
 
     publishDir "${params.results}/assembly/metaspades", mode: 'copy'
 
@@ -150,10 +194,11 @@ process metaspades {
         set val(name), file(reads) from ch_trimmed_reads_assembly_metaspades
 
     output:
-        set val(name), file("$name/contigs.fasta") into ch_metaspades_filter, ch_metaspades_quast
-        set val(name), file("$name") into ch_metaspades_log
+        set val(name2), file("*.metaspades_contigs.fa") into ch_metaspades_filter, ch_metaspades_quast
+        set val(name2), file("$name") into ch_metaspades_log
     script:
         mem = task.memory.toGiga()
+        name2 = name+"_metaspades"
         """
         spades.py --meta \
                   -1 ${reads[0]} \
@@ -162,6 +207,7 @@ process metaspades {
                   -m $mem \
                   --phred-offset ${params.phred} \
                   -o $name
+        cp $name/contigs.fasta ${name}.metaspades_contigs.fa
         """ 
 }
 
@@ -219,7 +265,7 @@ process align_reads_to_contigs {
     publishDir "${params.results}/alignment/${name}", mode: 'copy'
 
     input:
-        set val(name), file(contigs), val(name2), file(reads) from  ch_contigs_filter_size.merge(ch_trimmed_reads_mapping)
+        set val(name), file(contigs), val(name2), file(reads) from ch_contigs_filter_size.merge(ch_trimmed_reads_mapping)
     output:
         set val(name), file("*.sorted.bam") into (ch_alignment_to_dp, ch_alignment_to_pydamage)
     script:
@@ -309,6 +355,7 @@ process multiqc {
         file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
         file ('quast/*') from ch_quast_results.collect().ifEmpty([])
         file ('prokka/*') from ch_prokka_results.collect().ifEmpty([])
+        file ('fastp/*') from ch_fastp_for_multiqc.collect().ifEmpty([])
         file(multiqc_conf) from ch_multiqc_config
     output:
         file 'multiqc_report.html' into multiqc_report
