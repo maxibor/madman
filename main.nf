@@ -66,7 +66,6 @@ process AdapterRemoval {
     output:
         set val(name), file('*.trimmed.fastq') into ch_trimmed_reads_fastqc, ch_trimmed_reads_fastp
         file("*.settings") into ch_adapter_removal_results
-        val(name) into samp_name
 
     script:
         out1 = name+".pair1.trimmed.fastq"
