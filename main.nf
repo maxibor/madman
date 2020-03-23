@@ -214,7 +214,7 @@ ch_megahit_filter.mix(ch_metaspades_filter).set{ch_contigs_filter}
 ch_megahit_quast.mix(ch_metaspades_quast).set{ch_contigs_quast}
 ch_megahit_log.mix(ch_metaspades_log).set{ch_contigs_log}
 
-process quast {
+process quast_pre {
     tag "$name"
 
     label 'intenso'
@@ -226,9 +226,9 @@ process quast {
     input:
         set val(name), file(contigs) from ch_contigs_quast
     output:
-        file("*_quast") into ch_quast_results
+        file("*_quast_pre") into ch_quast_results_pre
     script:
-        outdir = name+"_quast"
+        outdir = name+"_quast_pre"
         """
         quast -o $outdir -t ${task.cpus} $contigs
         """
@@ -246,7 +246,7 @@ process filter_contigs_size {
     input:
         set val(name), file(fasta) from ch_contigs_filter
     output:
-        set val(name), file("*.size_filtered.fa") into ch_contigs_filter_size, ch_contigs_filter_ancient
+        set val(name), file("*.size_filtered.fa") into ch_contigs_filter_size, ch_contigs_filter_ancient, ch_contigs_dp
     script:
         filter_out = name+".size_filtered.fa"
         """
@@ -266,7 +266,7 @@ process align_reads_to_contigs {
     input:
         set val(name), file(contigs), val(name2), file(reads) from ch_contigs_filter_size.merge(ch_trimmed_reads_mapping)
     output:
-        set val(name), file("*.sorted.bam") into (ch_alignment_to_dp, ch_alignment_to_pydamage)
+        set val(name), file("*.sorted.bam") into (ch_alignment_to_dp_pre, ch_alignment_to_dp_post, ch_alignment_to_pydamage)
     script:
         outfile = name+".sorted.bam"
         if (params.paired_end) {
@@ -280,6 +280,27 @@ process align_reads_to_contigs {
             bowtie2 -x $name -U $reads --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
             """
         }
+}
+
+process damageProfiler_pre {
+    tag "$name"
+
+    label 'expresso'
+
+    errorStrategy 'ignore'
+
+    publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(contig), file(bam) from ch_contigs_dp.join(ch_alignment_to_dp_pre)
+    output:
+        file("*_pre_filtering.dmgprof.json") into dmgProf_pre
+    script:
+        outfile = name+"_pre_filtering.dmgprof.json"
+        """
+        damageprofiler -i $bam -r $contig -o tmp
+        mv tmp/${name}.sorted/dmgprof.json $outfile
+        """
 }
 
 process pydamage {
@@ -317,13 +338,66 @@ process filter_contigs_damage {
     input:
         set val(name), file(pydamage_csv), val(name2), file(contigs) from ch_pydamage_stats.merge(ch_contigs_filter_ancient)
     output:
-        set val(name), file("*.ancient_filtered.fa") into ch_filtered_ancient_contigs
+        set val(name), file("*.ancient_filtered.fa") into ch_filtered_ancient_contigs_prokka, ch_filtered_ancient_contigs_quast, ch_ancient_contigs_dp
+        set val(name), file("*_ancient_contigs.txt") into ch_ancient_contigs_list
     script:
         outfile = name + ".ancient_filtered.fa"
+        ancient_contigs = name+"_ancient_contigs.txt"
         """
         filter_contigs_damage.py -d ${params.mindamage} -o $outfile $contigs $pydamage_csv
+        awk -F "," '{if ((\$7 <= 0.05) && (\$5 >= ${params.mindamage})) { print \$1 }}' $pydamage_csv > $ancient_contigs
         """
 }
+
+process quast_post {
+    tag "$name"
+
+    label 'intenso'
+
+    errorStrategy 'ignore'
+
+    publishDir "${params.results}/quast/${name}", mode: 'copy'
+
+    input:
+        set val(name), file(contigs) from ch_filtered_ancient_contigs_quast
+    output:
+        file("*_quast_post") into ch_quast_results_post
+    script:
+        outdir = name+"_quast_post"
+        """
+        quast -o $outdir -t ${task.cpus} $contigs
+        """
+}
+
+process damageProfiler_post {
+    tag "$name"
+
+    label 'expresso'
+
+    errorStrategy 'ignore'
+
+    publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
+
+    input:
+        set val(name), 
+            file(contig), 
+            file(bam), 
+            file(acontigs) from ch_ancient_contigs_dp 
+                                    .join(ch_alignment_to_dp_post)
+                                    .join(ch_ancient_contigs_list)
+    output:
+        file("*_post_filtering.dmgprof.json") into dmgProf_post
+    script:
+        outfile = name+"_post_filtering.dmgprof.json"
+        """
+        damageprofiler -i ${bam} -r $contig -o tmp
+        mv tmp/${name}.sorted/dmgprof.json $outfile
+        """
+}
+
+
+// samtools view -@ ${task.cpus} $bam | grep -f $acontigs - > ${name}.ancient_contigs.bam -
+
 
 process prokka {
     tag "$name"
@@ -335,7 +409,7 @@ process prokka {
     publishDir "${params.results}/prokka", mode: 'copy'
 
     input:
-        set val(name), file(contigs) from ch_filtered_ancient_contigs
+        set val(name), file(contigs) from ch_filtered_ancient_contigs_prokka
     output:
         file("${name}") into ch_prokka_results
     script:
@@ -352,9 +426,12 @@ process multiqc {
     input:
         file ('adapterRemoval/*') from ch_adapter_removal_results.collect().ifEmpty([])
         file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
-        file ('quast/*') from ch_quast_results.collect().ifEmpty([])
+        file ('quast_pre/*') from ch_quast_results_pre.collect().ifEmpty([])
+        file ('quast_post/*') from ch_quast_results_post.collect().ifEmpty([])
         file ('prokka/*') from ch_prokka_results.collect().ifEmpty([])
         file ('fastp/*') from ch_fastp_for_multiqc.collect().ifEmpty([])
+        file ('dmgprof_pre/*') from dmgProf_pre.collect().ifEmpty([])
+        file ('dmgprof_post/*') from dmgProf_post.collect().ifEmpty([])
         file(multiqc_conf) from ch_multiqc_config
     output:
         file 'multiqc_report.html' into multiqc_report
