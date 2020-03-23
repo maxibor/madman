@@ -2,5 +2,20 @@ top_modules:
     - 'adapterRemoval'
     - 'fastqc'
     - 'fastp'
-    - 'quast'
+    - 'quast':
+        name: 'Quast (before size and damage filtering)'
+        path_filters:
+            - '*quast_pre/*'
+    - 'quast':
+        name: 'Quast (after size and damage filtering)'
+        path_filters:
+            - '*quast_post/*'
     - 'prokka'
+    - 'damageprofiler':
+        name: 'DamageProfiler (before size and damage filtering)'
+        path_filters:
+            - '*_pre_filtering.dmgprof.json'
+    - 'damageprofiler':
+        name: 'DamageProfiler (after size and damage filtering)'
+        path_filters:
+            - '*_post_filtering.dmgprof.json'
