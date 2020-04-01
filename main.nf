@@ -19,7 +19,7 @@ def helpMessage() {
       --minlen                          Minimum contig length to retain. Default:  ${params.minlen}
       --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
       --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
-      --assembly_tool                   Choose de novo assembly tool. (megahit | metaspades). Default: ${params.assembly_tool}
+      --assembly_tool                   Choose de novo assembly tool, seperated by ',' (megahit | metaspades). Default: ${params.assembly_tool}
 
     Options:
       --results                         The output directory where the results will be saved. Default: ${params.results}
