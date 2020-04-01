@@ -97,12 +97,15 @@ process fastp {
 
     script:
     if (params.paired_end) {
+        out1 = name+".pair1.trimmed.fq.gz"
+        out2 = name+".pair2.trimmed.fq.gz"
+        se_out = name+".trimmed.fq.gz"
     """
-    fastp --in1 ${reads[0]} --in2 ${reads[1]} --out1 "${reads[0].baseName}.fq.gz" --out2 "${reads[1].baseName}.fq.gz" -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json "${reads[0].baseName}"_fastp.json 
+    fastp --in1 ${reads[0]} --in2 ${reads[1]} --out1 $out1 --out2 $out2 -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json ${name}_fastp.json 
     """
     } else {
     """
-    fastp --in1 ${reads[0]} --out1 "${reads[0].baseName}.fq.gz" -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json "${reads[0].baseName}"_fastp.json 
+    fastp --in1 ${reads[0]} --out1 $se_out -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json ${name}_fastp.json 
     """
     }
 }
@@ -264,7 +267,7 @@ process align_reads_to_contigs {
     publishDir "${params.results}/alignment/${name}", mode: 'copy'
 
     input:
-        set val(name), file(contigs), val(name2), file(reads) from ch_contigs_filter_size.merge(ch_trimmed_reads_mapping)
+        set val(name), file(contigs), file(reads) from ch_contigs_filter_size.join(ch_trimmed_reads_mapping)
     output:
         set val(name), file("*.sorted.bam") into (ch_alignment_to_dp_pre, ch_alignment_to_dp_post, ch_alignment_to_pydamage)
     script:
@@ -336,7 +339,7 @@ process filter_contigs_damage {
     publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
 
     input:
-        set val(name), file(pydamage_csv), val(name2), file(contigs) from ch_pydamage_stats.merge(ch_contigs_filter_ancient)
+        set val(name), file(pydamage_csv), file(contigs) from ch_pydamage_stats.join(ch_contigs_filter_ancient)
     output:
         set val(name), file("*.ancient_filtered.fa") into ch_filtered_ancient_contigs_prokka, ch_filtered_ancient_contigs_quast, ch_ancient_contigs_dp
         set val(name), file("*_ancient_contigs.txt") into ch_ancient_contigs_list
