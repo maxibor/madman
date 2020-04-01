@@ -45,7 +45,17 @@ Define the minimum length of a poly-G tail to begin low complexity trimming. Def
 
 ### `--assembly_tool`
 
-Choose *de novo* assembly tool. Either `megahit` or `metaspades`
+Choose *de novo* assembly tool. `megahit` and `metaspades`.
+
+*Example*:
+
+```
+--assembly_tool megahit,metaspades
+```
+or 
+```
+--assembly_tool megahit
+```
 
 ### `--minlen`
 
@@ -128,7 +138,7 @@ Settings:
   --minlen                      Minimum contig length to retain. Default:  500
   --minread                     Minimum number of reads aligned to contig to consider contig. Default: 150
   --mindamage                   Mimimum amount of CtoT damage on the 5' end of the read. Default: 0.2
-  --assembly_tool               Choose de novo assembly tool. (megahit | metaspades). Default: megahit
+  --assembly_tool               Choose de novo assembly tool, seperated by ','. (megahit and/or metaspades). Default: megahit
 
 Options:
   --results                     The output directory where the results will be saved. Default: ./results
