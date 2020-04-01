@@ -1,5 +1,8 @@
 ![madman_nf_CI](https://github.com/maxibor/madman/workflows/madman_nf_CI/badge.svg)
 
+<img src="assets/logo/madman_logo.png" alt="madman logo" width="300"/>
+
+
 # MADMAN: **M**etagenomic **A**ssembly of **A**ncient **D**a**M**aged reads with **N**extflow
 
 Nextflow assembly pipeline for ancient DNA
