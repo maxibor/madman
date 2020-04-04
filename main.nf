@@ -58,7 +58,7 @@ log.info "----------------------------------------------------------------"
 process AdapterRemoval {
     tag "$name"
 
-    label 'expresso'
+    label 'intenso'
 
     input:
         set val(name), file(reads) from ch_reads_to_trim
@@ -86,7 +86,7 @@ process AdapterRemoval {
 process fastp {
     tag "$name"
 
-    label 'expresso'
+    label 'intenso'
 
     input:
         set val(name), file(reads) from ch_trimmed_reads_fastp
