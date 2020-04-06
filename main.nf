@@ -15,11 +15,13 @@ def helpMessage() {
     Settings:
       --phred                           Specifies the fastq quality encoding (33 | 64). Default: ${params.phred}
       --paired_end                      Specifies if reads are paired-end (true | false). Default: ${params.paired_end}
+      --adapter_list                    List of sequencing adapters to trim. Default: ${params.adapter_list}
       --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: ${params.complexity_filter_poly_g_min}
       --minlen                          Minimum contig length to retain. Default:  ${params.minlen}
       --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
       --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
       --assembly_tool                   Choose de novo assembly tool, seperated by ',' (megahit | metaspades). Default: ${params.assembly_tool}
+      
 
     Options:
       --results                         The output directory where the results will be saved. Default: ${params.results}
@@ -39,6 +41,8 @@ Channel
 	.set {ch_reads_to_trim}
 
 ch_multiqc_config = file(params.multiqc_config, checkIfExists: true)
+
+ch_adapter_list = file(params.adapter_list, checkIfExists: true)
 
 log.info "================================================================"
 def summary = [:]
@@ -62,6 +66,7 @@ process AdapterRemoval {
 
     input:
         set val(name), file(reads) from ch_reads_to_trim
+        file(adapter_list) from ch_adapter_list
 
     output:
         set val(name), file('*.trimmed.fastq') into ch_trimmed_reads_fastqc, ch_trimmed_reads_fastp
@@ -74,11 +79,33 @@ process AdapterRemoval {
         settings = name+".settings"
         if (params.paired_end){
             """
-            AdapterRemoval --basename $name --file1 ${reads[0]} --file2 ${reads[1]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $out1 --output2 $out2 --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
+            AdapterRemoval --basename $name \
+                           --file1 ${reads[0]} \
+                           --file2 ${reads[1]} \
+                           --trimns \
+                           --trimqualities \
+                           --minquality 20 \
+                           --minlength 30 \
+                           --output1 $out1 \
+                           --output2 $out2 \
+                           --threads ${task.cpus} \
+                           --qualitybase ${params.phred} \
+                           --adapter-list ${adapter_list} \
+                           --settings $settings
             """
         } else {
             """
-            AdapterRemoval --basename $name --file1 ${reads[0]} --trimns --trimqualities --minquality 20 --minlength 30 --output1 $se_out --threads ${task.cpus} --qualitybase ${params.phred} --settings $settings
+            AdapterRemoval --basename $name \
+                           --file1 ${reads[0]} \
+                           --trimns \
+                           --trimqualities \
+                           --minquality 20 \
+                           --minlength 30 \
+                           --output1 $se_out \
+                           --threads ${task.cpus} \
+                           --qualitybase ${params.phred} \
+                           --adapter-list ${adapter_list} \
+                           --settings $settings
             """
         }    
 }

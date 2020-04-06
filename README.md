@@ -42,6 +42,19 @@ Specifies if reads are paired-end (true | false). Default: `true`
 
 Fastq quality encoding. Default: `33`
 
+### `--adapter_list`
+
+Path to file containing the of sequencing adapters to trim in a file, one adapter pair per line
+
+Example file:
+
+```
+AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG    AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
+```
+
+Default: [`assets/adapter_list.txt`](assets/adapter_list.txt)
+
+
 ### `--complexity_filter_poly_g_min`
 
 Define the minimum length of a poly-G tail to begin low complexity trimming. Default: `10`
