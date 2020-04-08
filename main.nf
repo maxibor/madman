@@ -213,16 +213,16 @@ process metaspades {
     label 'bigmem'
 
     when: 
-        params.assembly_tool.toString().contains('metaspades')
+        params.assembly_tool.toString().contains("metaspades")
 
-    publishDir "${params.results}/assembly/metaspades", mode: 'copy'
+    publishDir "${params.results}/assembly/metaspades/${name}", mode: 'copy'
 
     input:
         set val(name), file(reads) from ch_trimmed_reads_assembly_metaspades
 
     output:
         set val(name2), file("*.metaspades_contigs.fa") into ch_metaspades_filter, ch_metaspades_quast
-        set val(name2), file("$name") into ch_metaspades_log
+        set val(name2), file("${name}/*") into ch_metaspades_log
     script:
         mem = task.memory.toGiga()
         name2 = name+"_metaspades"
@@ -307,7 +307,7 @@ process align_reads_to_contigs {
 process damageProfiler_pre {
     tag "$name"
 
-    label 'expresso'
+    label 'intenso'
 
     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
 
