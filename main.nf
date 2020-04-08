@@ -185,7 +185,7 @@ process megahit {
 
     label 'bigmem'
 
-    errorStrategy 'ignore'
+    
 
     when:
         params.assembly_tool.toString().contains('megahit')
@@ -211,8 +211,6 @@ process metaspades {
     tag "$name"
 
     label 'bigmem'
-
-    errorStrategy 'ignore'
 
     when: 
         params.assembly_tool.toString().contains('metaspades')
@@ -247,9 +245,7 @@ ch_megahit_log.mix(ch_metaspades_log).set{ch_contigs_log}
 process quast_pre {
     tag "$name"
 
-    label 'intenso'
-
-    errorStrategy 'ignore'
+    label 'intenso' 
 
     publishDir "${params.results}/quast/${name}", mode: 'copy'
 
@@ -269,8 +265,6 @@ process filter_contigs_size {
 
     label 'intenso'
 
-    errorStrategy 'ignore'
-
     publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
 
     input:
@@ -288,8 +282,6 @@ process align_reads_to_contigs {
     tag "$name"
 
     label 'intenso'
-
-    errorStrategy 'ignore'
 
     publishDir "${params.results}/alignment/${name}", mode: 'copy'
 
@@ -317,8 +309,6 @@ process damageProfiler_pre {
 
     label 'expresso'
 
-    errorStrategy 'ignore'
-
     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
 
     input:
@@ -340,8 +330,6 @@ process pydamage {
 
     publishDir "${params.results}/pydamage/", mode: 'copy'
 
-    errorStrategy 'ignore'
-
     input:
         set val(name), file(bam) from ch_alignment_to_pydamage
     output:
@@ -358,8 +346,6 @@ process filter_contigs_damage {
     tag "$name"
 
     label 'ristretto'
-
-    errorStrategy 'ignore'
 
     echo true
 
@@ -384,8 +370,6 @@ process quast_post {
 
     label 'intenso'
 
-    errorStrategy 'ignore'
-
     publishDir "${params.results}/quast/${name}", mode: 'copy'
 
     input:
@@ -403,8 +387,6 @@ process damageProfiler_post {
     tag "$name"
 
     label 'expresso'
-
-    errorStrategy 'ignore'
 
     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
 
@@ -433,8 +415,6 @@ process prokka {
     tag "$name"
 
     label 'intenso'
-
-    errorStrategy 'ignore'
 
     publishDir "${params.results}/prokka", mode: 'copy'
 
@@ -499,7 +479,7 @@ process multiqc {
 
 //     label 'expresso'
 
-//     errorStrategy 'ignore'
+//     
 
 //     publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
 
