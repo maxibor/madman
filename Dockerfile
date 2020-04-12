@@ -3,6 +3,7 @@ LABEL authors="Maxime Borry" \
     description="Docker image containing all software requirements for the madman-0.1-dev pipeline"
 
 # Install the conda environment
+RUN pip install termplotlib
 COPY environment.yml /
 RUN conda env create -f /environment.yml && conda clean -a
 RUN conda env export --name madman-0.1-dev > madman-0.1-dev.yml
