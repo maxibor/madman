@@ -7,7 +7,7 @@
 
 Nextflow assembly pipeline for ancient DNA
 
-## Dependancies
+## Dependencies
 
 - [Nextflow](https://www.nextflow.io/) : `conda install -c bioconda nextflow`
 
@@ -33,7 +33,6 @@ Use this to specify the location of your input FastQ files. For example:
 
 ## Arguments
 
-
 ### `--single_end`
 
 To specify if reads are single-end.
@@ -51,9 +50,9 @@ Example file:
 ```
 AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG    AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
 ```
+See [AdapterRemoval documentation](https://adapterremoval.readthedocs.io/en/latest/) for more details
 
 Default: [`assets/adapter_list.txt`](assets/adapter_list.txt)
-
 
 ### `--complexity_filter_poly_g_min`
 
@@ -75,7 +74,7 @@ or
 
 ### `--minlen`
 
-Minimum length of contig to keep it. Default: `500`
+Minimum length of contig to be kept. Default: `500`
 
 ### `--wlen`
 
@@ -83,19 +82,19 @@ Window length from 5' end to consider for damage estimation. Default: `20`
 
 ### `--minread`
 
-Minimum number of reads aligned back to a contig to keep it. Default: `150`
+Minimum number of reads aligned back to a contig to be kept. Default: `150`
 
 ### `--mindamage`
 
- Mimimum amount of CtoT damage on the 5' end of the aligned reads to keep the contig. Default=`0.2`
+Mimimum amount of C to T damage on the 5' end of the aligned reads to keep the contig. Default=`0.2`
 
 ### `--results`
 
-Path to directory to save results. Default: `results`
+Path to directory to save results. Default: `results/`
 
 ## Output
 
-The output is generated in the `results` directory
+The output is generated in the `results/` directory
 
 ### `multiqc_report.html`
 
@@ -107,7 +106,7 @@ Report summarizing the execution of the pipeline
 
 ### `assembly`
 
-Contains the output of megahit assembler:
+Contains the output of [megahit](https://github.com/voutcn/megahit) assembler:
 
 - contigs
 - logfile
