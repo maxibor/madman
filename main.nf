@@ -19,6 +19,7 @@ def helpMessage() {
       --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: ${params.complexity_filter_poly_g_min}
       --minlen                          Minimum contig length to retain. Default:  ${params.minlen}
       --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
+      --coverage                        Minimum coverage to consider contig. Default: ${params.coverage}
       --wlen                            Window length from 5' end to consider for damage estimation. Default: ${params.wlen}
       --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
       --assembly_tool                   Choose de novo assembly tool, seperated by ',' (megahit | metaspades). Default: ${params.assembly_tool}
@@ -339,7 +340,7 @@ process pydamage {
         output = name+".pydamage"
         """
         samtools index $bam
-        pydamage -p ${task.cpus} -m ${params.minread} -w ${params.wlen} -o $output $bam
+        pydamage -p ${task.cpus} -m ${params.minread} -c ${params.coverage} -w ${params.wlen} -o $output $bam
         """
 }
 

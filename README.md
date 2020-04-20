@@ -85,6 +85,12 @@ Window length from 5' end to consider for damage estimation. Default: `20`
 
 Minimum number of reads aligned back to a contig to keep it. Default: `150`
 
+### `--coverage`
+
+Minimum coverage to consider contig. Default: `0.5`
+
+> **pydamage logic: `n_reads >=minread OR cov >= coverage`**
+
 ### `--mindamage`
 
  Mimimum amount of CtoT damage on the 5' end of the aligned reads to keep the contig. Default=`0.2`
