@@ -33,9 +33,9 @@ Use this to specify the location of your input FastQ files. For example:
 
 ## Arguments
 
-### `--paired_end`
+### `--single_end`
 
-Specifies if reads are paired-end. If you do not have paired end data, omit this flag. Default: `true`
+To specify if reads are single-end.
 
 ### `--phred`
 
@@ -75,6 +75,10 @@ or
 ### `--minlen`
 
 Minimum length of contig to be kept. Default: `500`
+
+### `--wlen`
+
+Window length from 5' end to consider for damage estimation. Default: `20`
 
 ### `--minread`
 
@@ -137,7 +141,7 @@ Contains the [prokka](https://github.com/tseemann/prokka) annotation report file
 $ nextflow run maxibor/madman --help
 N E X T F L O W  ~  version 19.10.0
 Launching `maxibor/madman` [maniac_hypatia] - revision: cf6cdbd49c
-madman: simple Megahit assembler Nextflow pipeline
+MADMAN: Metagenomic Assembly of Ancient DaMaged reads with Nextflow
  Homepage: https://github.com/maxibor/madman
  Author: Maxime Borry <borry@shh.mpg.de>
 =========================================
@@ -145,19 +149,23 @@ Usage:
 The typical command for running the pipeline is as follows:
 nextflow run maxibor/madman --reads '/path/to/paired_end_reads_*.{1,2}.fastq.gz'
 Mandatory arguments:
-  --reads                       Path to input data (must be surrounded with quotes)
+  --reads                           Path to input data (must be surrounded with quotes)
 
 Settings:
-  --phred                       Specifies the fastq quality encoding (33 | 64). Default: 33
-  --paired_end                  Specifies if reads are paired-end (true | false). Default: true
-  --minlen                      Minimum contig length to retain. Default:  500
-  --minread                     Minimum number of reads aligned to contig to consider contig. Default: 150
-  --mindamage                   Mimimum amount of CtoT damage on the 5' end of the read. Default: 0.2
-  --assembly_tool               Choose de novo assembly tool, seperated by ',' (megahit and/or metaspades). Default: megahit
+  --phred                           Specifies the fastq quality encoding (33 | 64). Default: 33
+  --single_end                      To specify if reads are single-end.
+  --adapter_list                    List of sequencing adapters to trim. Default: /Users/borry/Documents/GitHub/madman/assets/adapter_list.txt
+  --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: 10
+  --minlen                          Minimum contig length to retain. Default:  300
+  --minread                         Minimum number of reads aligned to contig to consider contig. Default: 150
+  --wlen                            Window length from 5' end to consider for damage estimation. Default: 20
+  --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: 0.2
+  --assembly_tool                   Choose de novo assembly tool, seperated by ',' (megahit | metaspades). Default: megahit
+
 
 Options:
-  --results                     The output directory where the results will be saved. Default: ./results
-  --help  --h                   Shows this help page
+  --results                         The output directory where the results will be saved. Default: ./results
+  --help  --h                       Shows this help page
 ```
 
 ## Workflow

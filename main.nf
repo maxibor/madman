@@ -14,11 +14,12 @@ def helpMessage() {
 
     Settings:
       --phred                           Specifies the fastq quality encoding (33 | 64). Default: ${params.phred}
-      --paired_end                      Specifies if reads are paired-end (true | false). Default: ${params.paired_end}
+      --single_end                      To specify if reads are single-end.
       --adapter_list                    List of sequencing adapters to trim. Default: ${params.adapter_list}
       --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: ${params.complexity_filter_poly_g_min}
       --minlen                          Minimum contig length to retain. Default:  ${params.minlen}
       --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
+      --wlen                            Window length from 5' end to consider for damage estimation. Default: ${params.wlen}
       --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
       --assembly_tool                   Choose de novo assembly tool, seperated by ',' (megahit | metaspades). Default: ${params.assembly_tool}
       
@@ -36,7 +37,7 @@ if (params.help){
 }
 
 Channel
-    .fromFilePairs( params.reads, size: params.paired_end ? 2 : 1 )
+    .fromFilePairs( params.reads, size: params.single_end ? 1 : 2 )
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\n" }
 	.set {ch_reads_to_trim}
 
@@ -48,7 +49,7 @@ log.info "================================================================"
 def summary = [:]
 summary['Reads'] = params.reads
 summary['phred'] = params.phred
-summary['paired_end'] = params.paired_end
+summary['single_end'] = params.single_end
 summary['assembly tool'] = params.assembly_tool 
 summary['minlen'] = params.minlen
 summary['minread'] = params.minread
@@ -77,7 +78,7 @@ process AdapterRemoval {
         out2 = name+".pair2.trimmed.fastq"
         se_out = name+".trimmed.fastq"
         settings = name+".settings"
-        if (params.paired_end){
+        if (! params.single_end){
             """
             AdapterRemoval --basename $name \
                            --file1 ${reads[0]} \
@@ -123,7 +124,7 @@ process fastp {
         file("*.json") into ch_fastp_for_multiqc
 
     script:
-    if (params.paired_end) {
+    if (!params.single_end) {
         out1 = name+".pair1.trimmed.fq.gz"
         out2 = name+".pair2.trimmed.fq.gz"
         se_out = name+".trimmed.fq.gz"
@@ -291,7 +292,7 @@ process align_reads_to_contigs {
         set val(name), file("*.sorted.bam") into (ch_alignment_to_dp_pre, ch_alignment_to_dp_post, ch_alignment_to_pydamage)
     script:
         outfile = name+".sorted.bam"
-        if (params.paired_end) {
+        if (!params.single_end) {
             """
             bowtie2-build --threads ${task.cpus} $contigs $name
             bowtie2 -x $name -1 ${reads[0]} -2 ${reads[1]} --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
@@ -338,7 +339,7 @@ process pydamage {
         output = name+".pydamage"
         """
         samtools index $bam
-        pydamage -p ${task.cpus} -m ${params.minread} -o $output $bam
+        pydamage -p ${task.cpus} -m ${params.minread} -w ${params.wlen} -o $output $bam
         """
 }
 
