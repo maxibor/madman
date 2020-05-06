@@ -26,5 +26,4 @@ dependencies:
   - statsmodels
   - gnuplot
   - pip:
-    - termplotlib
     - git+https://github.com/maxibor/pydamage.git
