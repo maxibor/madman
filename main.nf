@@ -62,45 +62,88 @@ if(workflow.containerEngine) summary['Container'] = "$workflow.containerEngine -
 log.info summary.collect { k,v -> "${k.padRight(25)}: $v" }.join("\n")
 log.info "----------------------------------------------------------------"
 
-
-include adapterremoval from "$baseDir/modules/adapterremoval/main.nf" params(params)
-include align_reads_to_contigs from "$baseDir/modules/bowtie2/main.nf" params(params)
-include {damageprofiler as damageprofiler_pre; damageprofiler as damageprofiler_post} from "$baseDir/modules/damageprofiler/main.nf" params(params)
-include fastp from "$baseDir/modules/fastp/main.nf" params(params)
-include fastqc from "$baseDir/modules/fastqc/main.nf" params(params)
-include filter_contigs_length from "$baseDir/modules/filter_contigs_length/main.nf" params(params)
-include filter_contigs_damage from "$baseDir/modules/filter_contigs_damage/main.nf" params(params)
-include megahit from "$baseDir/modules/megahit/main.nf" params(params)
-include {metaspades; biospades} from "$baseDir/modules/metaspades/main.nf" params(params)
-include prokka from "$baseDir/modules/prokka/main.nf" params(params)
-include pydamage from "$baseDir/modules/pydamage/main.nf" params(params)
-include {quast as quast_pre ; quast as quast_post} from "$baseDir/modules/quast/main.nf" params(params)
-include multiqc from "$baseDir/modules/multiqc/main.nf" params(params)
+include megahit from "$baseDir/modules/tools/megahit/main.nf" params(params)
+include {metaspades ; biospades} from "$baseDir/modules/tools/metaspades/main.nf" params(params)
+include multiqc from "$baseDir/modules/tools/multiqc/main.nf" params(params)
+include PRE_ASSEMBLY from "$baseDir/modules/workflows/pre_assembly.nf" params(params)
+include {POST_ASSEMBLY as POST_ASSEMBLY_MEGAHIT ; POST_ASSEMBLY as POST_ASSEMBLY_BIOSPADES; POST_ASSEMBLY as POST_ASSEMBLY_METASPADES} from "$baseDir/modules/workflows/post_assembly.nf" params(params)
 
 
 workflow {
-    adapterremoval(ch_reads, ch_adapter_list)
-    fastp(adapterremoval.out.trimmed_reads)
-    fastqc(adapterremoval.out.trimmed_reads)
-    megahit(fastp.out.trimmed_reads)
-    quast_pre(megahit.out.contigs, "pre")
-    filter_contigs_length(megahit.out.contigs)
-    align_reads_to_contigs(filter_contigs_length.out.join(fastp.out.trimmed_reads))
-    damageprofiler_pre(megahit.out.contigs.join(align_reads_to_contigs.out), "pre")
-    pydamage(align_reads_to_contigs.out)
-    filter_contigs_damage(pydamage.out.csv.join(megahit.out.contigs))
-    quast_post(filter_contigs_damage.out.fasta, "post")
-    damageprofiler_post(filter_contigs_damage.out.fasta.join(align_reads_to_contigs.out),"post")
-    prokka(filter_contigs_damage.out.fasta)
-    multiqc(adapterremoval.out.settings, 
-            fastqc.out.collect().ifEmpty([]), 
-            quast_pre.out.collect().ifEmpty([]),
-            quast_post.out.collect().ifEmpty([]),
-            prokka.out.collect().ifEmpty([]),
-            fastp.out.settings.collect().ifEmpty([]),
-            damageprofiler_pre.out.collect().ifEmpty([]),
-            damageprofiler_post.out.collect().ifEmpty([]),
+    PRE_ASSEMBLY(ch_reads, ch_adapter_list)
+
+    if (params.assembly_tool.toString().contains('megahit')) {
+        println("MOIHGOIWEHOIWEVIEWUO")
+        megahit(PRE_ASSEMBLY.out.trimmed_reads)
+        POST_ASSEMBLY_MEGAHIT(megahit.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "megahit")
+        POST_ASSEMBLY_MEGAHIT.out.quast_pre.set {megahit_quast_pre}
+    } else {
+        megahit_quast_pre = Channel.empty()
+        POST_ASSEMBLY_MEGAHIT.out.quast_post = Channel.empty()
+        POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre = Channel.empty()
+        POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post = Channel.empty()
+        POST_ASSEMBLY_MEGAHIT.out.prokka = Channel.empty()
+    }
+
+    if (params.assembly_tool.toString().contains('biospades')) {
+        biospades(PRE_ASSEMBLY.out.trimmed_reads)
+        POST_ASSEMBLY_BIOSPADES(biospades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "biospades")
+        POST_ASSEMBLY_BIOSPADES.out.quast_pre.set {biospades_quast_pre}
+    } else {
+        biospades_quast_pre = Channel.empty()
+        POST_ASSEMBLY_BIOSPADES.out.quast_pre = Channel.empty()
+        POST_ASSEMBLY_BIOSPADES.out.quast_post = Channel.empty()
+        POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre = Channel.empty()
+        POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post = Channel.empty()
+        POST_ASSEMBLY_BIOSPADES.out.prokka = Channel.empty()
+    }
+
+    if (params.assembly_tool.toString().contains('metaspades')) {
+        metaspades(PRE_ASSEMBLY.out.trimmed_reads)
+        POST_ASSEMBLY_METASPADES(biospades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "metaspades")
+    } else {
+        POST_ASSEMBLY_METASPADES.out.quast_pre = Channel.empty()
+        POST_ASSEMBLY_METASPADES.out.quast_post = Channel.empty()
+        POST_ASSEMBLY_METASPADES.out.damageprofiler_pre = Channel.empty()
+        POST_ASSEMBLY_METASPADES.out.damageprofiler_post = Channel.empty()
+        POST_ASSEMBLY_METASPADES.out.prokka = Channel.empty()
+    }
+
+    megahit_quast_pre.mix(biospades_quast_pre).set {ch_quast_pre}
+
+
+    // POST_ASSEMBLY_MEGAHIT.out.quast_pre
+    //     .mix(POST_ASSEMBLY_BIOSPADES.out.quast_pre, POST_ASSEMBLY_METASPADES.out.quast_pre)
+    //     .set {quast_pre_ch}
+
+    // POST_ASSEMBLY_MEGAHIT.out.quast_post
+    //     .mix(POST_ASSEMBLY_BIOSPADES.out.quast_post, POST_ASSEMBLY_METASPADES.out.quast_post)
+    //     .set {quast_post}
+
+
+    // POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre
+    //     .mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre, POST_ASSEMBLY_METASPADES.out.damageprofiler_pre)
+    //     .set {damageprofiler_pre}
+
+    // POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post
+    //     .mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post, POST_ASSEMBLY_METASPADES.out.damageprofiler_post)
+    //     .set {damageprofiler_post}
+
+    // POST_ASSEMBLY_MEGAHIT.out.prokka
+    //     .mix(POST_ASSEMBLY_BIOSPADES.out.prokka, POST_ASSEMBLY_METASPADES.out.prokka)
+    //     .set {prokka}
+    
+    
+    multiqc(PRE_ASSEMBLY.out.adapater_removal_logs.collect().ifEmpty([]), 
+            PRE_ASSEMBLY.out.fastqc_logs.collect().ifEmpty([]), 
+            PRE_ASSEMBLY.out.fastp_logs.collect().ifEmpty([]),
+            POST_ASSEMBLY_MEGAHIT.out.quast_pre.collect().ifEmpty([]),
+            POST_ASSEMBLY_MEGAHIT.out.quast_post.collect().ifEmpty([]),
+            POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre.collect().ifEmpty([]),
+            POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post.collect().ifEmpty([]),
+            POST_ASSEMBLY_MEGAHIT.out.prokka.collect().ifEmpty([]),
             ch_multiqc_config)
+
 
 }
 
