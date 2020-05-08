@@ -3,7 +3,7 @@ process filter_contigs_length {
 
     label 'intenso'
 
-    publishDir "${params.results}/fasta_filter/${name}", mode: 'copy'
+    publishDir "${params.outdir}/fasta_filter/${name}", mode: 'copy'
 
     input:
         tuple val(name), path(fasta)

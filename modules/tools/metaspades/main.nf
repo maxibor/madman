@@ -3,7 +3,7 @@ process metaspades {
 
     label 'process_bigmem'
 
-    publishDir "${params.results}/assembly/metaspades/${name}", mode: 'copy'
+    publishDir "${params.outdir}/assembly/metaspades/${name}", mode: 'copy'
 
     input:
         tuple val(name), path(reads)
@@ -29,7 +29,7 @@ process biospades {
 
     label 'process_bigmem'
 
-    publishDir "${params.results}/assembly/biospades/${name}", mode: 'copy'
+    publishDir "${params.outdir}/assembly/biospades/${name}", mode: 'copy'
 
     input:
         tuple val(name), path(reads)

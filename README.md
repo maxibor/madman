@@ -1,162 +1,81 @@
-![madman_nf_CI](https://github.com/maxibor/madman/workflows/madman_nf_CI/badge.svg)
+# ![nf-core/madman](docs/images/nf-core-madman_logo.png)
 
-<img src="assets/logo/madman_logo.png" alt="madman logo" width="300"/>
+**Metagenomic Assembly of Ancient DaMaged reads with Nextflow**.
+
+[![GitHub Actions CI Status](https://github.com/nf-core/madman/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/madman/actions)
+[![GitHub Actions Linting Status](https://github.com/nf-core/madman/workflows/nf-core%20linting/badge.svg)](https://github.com/nf-core/madman/actions)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
 
 
-# MADMAN: **M**etagenomic **A**ssembly of **A**ncient **D**a**M**aged reads with **N**extflow
 
-Nextflow assembly pipeline for ancient DNA
 
-## Dependencies
+## Introduction
 
-- [Nextflow](https://www.nextflow.io/) : `conda install -c bioconda nextflow`
+MADMAN is an assembly pipeline for ancient DNA.
+It is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker containers making installation trivial and results highly reproducible.
 
-## Usage
+## Quick Start
 
-```
-nextflow run maxibor/madman -profile docker --reads "/path/to/paired_end_reads_*.{1,2}.fastq.gz"
-```
+i. Install [`nextflow`](https://nf-co.re/usage/installation)
 
-## Input
+ii. Install either [`Docker`](https://docs.docker.com/engine/installation/) or [`Singularity`](https://www.sylabs.io/guides/3.0/user-guide/) for full pipeline reproducibility (please only use [`Conda`](https://conda.io/miniconda.html) as a last resort; see [docs](https://nf-co.re/usage/configuration#basic-configuration-profiles))
 
-### --reads
+iii. Download the pipeline and test it on a minimal dataset with a single command
 
-Use this to specify the location of your input FastQ files. For example:
-
-`--reads 'path/to/data/sample_*_{1,2}.fastq'`
-
-**Please note the following requirements:**
-
-- The path must be enclosed in quotes
-- The path must have at least one * wildcard character
-- When using the pipeline with paired end data, the path must use {1,2} notation to specify read pairs.
-
-## Arguments
-
-### `--single_end`
-
-To specify if reads are single-end.
-
-### `--phred`
-
-Fastq quality encoding. Default: `33`
-
-### `--adapter_list`
-
-Path to file containing the of sequencing adapters to trim in a file, one adapter pair per line
-
-Example file:
-
-```
-AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG    AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
-```
-See [AdapterRemoval documentation](https://adapterremoval.readthedocs.io/en/latest/) for more details
-
-Default: [`assets/adapter_list.txt`](assets/adapter_list.txt)
-
-### `--complexity_filter_poly_g_min`
-
-Define the minimum length of a poly-G tail to begin low complexity trimming. Default: `10`
-
-### `--megahit`
-
-Run [megahit](https://github.com/voutcn/megahit) de novo assembler
-
-*Example*:
-
-```
---megahit
+```bash
+nextflow run nf-core/madman -profile test,<docker/singularity/conda/institute>
 ```
 
-### `--metaspades`
+> Please check [nf-core/configs](https://github.com/nf-core/configs#documentation) to see if a custom config file to run nf-core pipelines already exists for your Institute. If so, you can simply use `-profile <institute>` in your command. This will enable either `docker` or `singularity` and set the appropriate execution settings for your local compute environment.
 
-Run [metaspades](https://github.com/ablab/spades) de novo assembler
+iv. Start running your own analysis!
 
-*Example*:
+<!-- TODO nf-core: Update the default command above used to run the pipeline -->
 
-```
---metaspades
-```
-
-### `--biospades`
-
-Run [biosynthetic spades](https://github.com/ablab/spades) de novo assembler
-
-*Example*:
-
-```
---biospades
+```bash
+nextflow run nf-core/madman -profile <docker/singularity/conda/institute> --reads '*_R{1,2}.fastq.gz' --genome GRCh37
 ```
 
+See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
 
+## Documentation
 
-### `--minlen`
+The nf-core/madman pipeline comes with documentation about the pipeline, found in the `docs/` directory:
 
-Minimum length of contig to be kept. Default: `500`
+1. [Installation](https://nf-co.re/usage/installation)
+2. Pipeline configuration
+    * [Local installation](https://nf-co.re/usage/local_installation)
+    * [Adding your own system config](https://nf-co.re/usage/adding_own_config)
+    * [Reference genomes](https://nf-co.re/usage/reference_genomes)
+3. [Running the pipeline](docs/usage.md)
+4. [Output and how to interpret the results](docs/output.md)
+5. [Troubleshooting](https://nf-co.re/usage/troubleshooting)
 
-### `--wlen`
+<!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
 
-Window length from 5' end to consider for damage estimation. Default: `20`
+## Credits
 
-### `--minread`
+nf-core/madman was originally written by Maxime Borry.
 
-Minimum number of reads aligned back to a contig to be kept. Default: `150`
+## Contributions and Support
 
-### `--coverage`
+If you would like to contribute to this pipeline, please see the [contributing guidelines](.github/CONTRIBUTING.md).
 
-Minimum coverage to consider contig. Default: `0.5`
+For further information or help, don't hesitate to get in touch on [Slack](https://nfcore.slack.com/channels/madman) (you can join with [this invite](https://nf-co.re/join/slack)).
 
-> **pydamage logic: `n_reads >=minread OR cov >= coverage`**
+## Citation
 
-### `--mindamage`
+<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
+<!-- If you use  nf-core/madman for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
 
-Mimimum amount of C to T damage on the 5' end of the aligned reads to keep the contig. Default=`0.2`
+You can cite the `nf-core` publication as follows:
 
-### `--results`
-
-Path to directory to save results. Default: `results/`
-
-## Output
-
-The output is generated in the `results/` directory
-
-### `multiqc_report.html`
-
-Report summarizing the results
-
-### `execution_report.html`
-
-Report summarizing the execution of the pipeline
-
-### `assembly`
-
-Contains the output of de novo assembler:
-
-- contigs
-- logfile
-
-### `alignment`
-
-Contains the bam file of the reads aligned back to the contigs
-
-### `fasta_filter`
-
-Contains the contigs filter:
-
-- by size: `*.size_filtered.fa`
-- by damage (pydamage) and size `*.ancient_filtered.fa`
-
-### `pydamage`
-
-Contains the [pydamage](https://github.com/maxibor/pydamage) ancient DNA estimation report file
-
-### `quast`
-
-Contains the [Quast](https://github.com/ablab/quast) assembly statistics report files
-
-### `prokka`
-
-Contains the [prokka](https://github.com/tseemann/prokka) annotation report files
+> **The nf-core framework for community-curated bioinformatics pipelines.**
+>
+> Philip Ewels, Alexander Peltzer, Sven Fillinger, Harshil Patel, Johannes Alneberg, Andreas Wilm, Maxime Ulysse Garcia, Paolo Di Tommaso & Sven Nahnsen.
+>
+> _Nat Biotechnol._ 2020 Feb 13. doi: [10.1038/s41587-020-0439-x](https://dx.doi.org/10.1038/s41587-020-0439-x).  
+> ReadCube: [Full Access Link](https://rdcu.be/b1GjZ)
 
 
 ## Help

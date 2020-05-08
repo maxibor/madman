@@ -25,5 +25,8 @@ dependencies:
   - scipy
   - statsmodels
   - tqdm
+  - markdown
+  - pymdown-extensions
+  - pygments
   - pip:
     - git+https://github.com/maxibor/pydamage.git

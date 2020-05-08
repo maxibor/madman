@@ -3,7 +3,7 @@ process prokka {
 
     label 'process_high'
 
-    publishDir "${params.results}/prokka", mode: 'copy'
+    publishDir "${params.outdir}/prokka", mode: 'copy'
 
     input:
         tuple val(name), path(contigs)

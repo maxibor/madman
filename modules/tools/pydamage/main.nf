@@ -2,7 +2,7 @@ process pydamage {
     tag "$name"
     label 'process_medium'
 
-    publishDir "${params.results}/pydamage/$name", mode: 'copy'
+    publishDir "${params.outdir}/pydamage/$name", mode: 'copy'
 
     input:
         tuple val(name), path(bam)

@@ -3,7 +3,7 @@ process align_reads_to_contigs {
 
     label 'process_high'
 
-    publishDir "${params.results}/alignment/${name}", mode: 'copy'
+    publishDir "${params.outdir}/alignment/${name}", mode: 'copy'
 
     input:
         tuple val(name), path(contigs), path(reads)

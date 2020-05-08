@@ -3,7 +3,7 @@ process megahit {
 
     label 'process_bigmem'
 
-    publishDir "${params.results}/assembly/megahit/${name}", mode: 'copy'
+    publishDir "${params.outdir}/assembly/megahit/${name}", mode: 'copy'
 
     input:
         tuple val(name), path(reads)

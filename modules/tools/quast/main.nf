@@ -3,7 +3,7 @@ process quast {
 
     label 'process_medium' 
 
-    publishDir "${params.results}/quast/${name}", mode: 'copy'
+    publishDir "${params.outdir}/quast/${outdir}", mode: 'copy'
 
     input:
         tuple val(name), path(contigs)

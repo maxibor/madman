@@ -2,42 +2,50 @@
 
 ## Table of contents
 
-* [Table of contents](#table-of-contents)
-* [Introduction](#introduction)
-* [Running the pipeline](#running-the-pipeline)
-  * [Updating the pipeline](#updating-the-pipeline)
-  * [Reproducibility](#reproducibility)
-* [Main arguments](#main-arguments)
-  * [`-profile`](#-profile)
-  * [`--reads`](#--reads)
-  * [`--single_end`](#--single_end)
-* [Reference genomes](#reference-genomes)
-  * [`--genome` (using iGenomes)](#--genome-using-igenomes)
-  * [`--fasta`](#--fasta)
-  * [`--igenomes_ignore`](#--igenomes_ignore)
-* [Job resources](#job-resources)
-  * [Automatic resubmission](#automatic-resubmission)
-  * [Custom resource requests](#custom-resource-requests)
-* [AWS Batch specific parameters](#aws-batch-specific-parameters)
-  * [`--awsqueue`](#--awsqueue)
-  * [`--awsregion`](#--awsregion)
-  * [`--awscli`](#--awscli)
-* [Other command line parameters](#other-command-line-parameters)
-  * [`--outdir`](#--outdir)
-  * [`--email`](#--email)
-  * [`--email_on_fail`](#--email_on_fail)
-  * [`--max_multiqc_email_size`](#--max_multiqc_email_size)
-  * [`-name`](#-name)
-  * [`-resume`](#-resume)
-  * [`-c`](#-c)
-  * [`--custom_config_version`](#--custom_config_version)
-  * [`--custom_config_base`](#--custom_config_base)
-  * [`--max_memory`](#--max_memory)
-  * [`--max_time`](#--max_time)
-  * [`--max_cpus`](#--max_cpus)
-  * [`--plaintext_email`](#--plaintext_email)
-  * [`--monochrome_logs`](#--monochrome_logs)
-  * [`--multiqc_config`](#--multiqc_config)
+* [nf-core/madman: Usage](#nf-coremadman-usage)
+  * [Table of contents](#table-of-contents)
+  * [Introduction](#introduction)
+  * [Running the pipeline](#running-the-pipeline)
+    * [Updating the pipeline](#updating-the-pipeline)
+    * [Reproducibility](#reproducibility)
+  * [Main arguments](#main-arguments)
+    * [`-profile`](#profile)
+    * [`--reads`](#reads)
+    * [`--single_end`](#singleend)
+    * [`--phred`](#phred)
+    * [`--adapter_list`](#adapterlist)
+    * [`--complexity_filter_poly_g_min`](#complexityfilterpolygmin)
+    * [`--megahit`](#megahit)
+    * [`--metaspades`](#metaspades)
+    * [`--biospades`](#biospades)
+    * [`--minlen`](#minlen)
+    * [`--wlen`](#wlen)
+    * [`--minread`](#minread)
+    * [`--coverage`](#coverage)
+    * [`--mindamage`](#mindamage)
+  * [Job resources](#job-resources)
+    * [Automatic resubmission](#automatic-resubmission)
+    * [Custom resource requests](#custom-resource-requests)
+  * [AWS Batch specific parameters](#aws-batch-specific-parameters)
+    * [`--awsqueue`](#awsqueue)
+    * [`--awsregion`](#awsregion)
+    * [`--awscli`](#awscli)
+  * [Other command line parameters](#other-command-line-parameters)
+    * [`--outdir`](#outdir)
+    * [`--email`](#email)
+    * [`--email_on_fail`](#emailonfail)
+    * [`--max_multiqc_email_size`](#maxmultiqcemailsize)
+    * [`-name`](#name)
+    * [`-resume`](#resume)
+    * [`-c`](#c)
+    * [`--custom_config_version`](#customconfigversion)
+    * [`--custom_config_base`](#customconfigbase)
+    * [`--max_memory`](#maxmemory)
+    * [`--max_time`](#maxtime)
+    * [`--max_cpus`](#maxcpus)
+    * [`--plaintext_email`](#plaintextemail)
+    * [`--monochrome_logs`](#monochromelogs)
+    * [`--multiqc_config`](#multiqcconfig)
 
 ## Introduction
 
@@ -145,57 +153,79 @@ By default, the pipeline expects paired-end data. If you have single-end data, y
 
 It is not possible to run a mixture of single-end and paired-end files in one run.
 
-## Reference genomes
+### `--phred`
 
-The pipeline config files come bundled with paths to the illumina iGenomes reference index files. If running with docker or AWS, the configuration is set up to use the [AWS-iGenomes](https://ewels.github.io/AWS-iGenomes/) resource.
+Fastq quality encoding. Default: `33`
 
-### `--genome` (using iGenomes)
+### `--adapter_list`
 
-There are 31 different species supported in the iGenomes references. To run the pipeline, you must specify which to use with the `--genome` flag.
+Path to file containing the of sequencing adapters to trim in a file, one adapter pair per line
 
-You can find the keys to specify the genomes in the [iGenomes config file](../conf/igenomes.config). Common genomes that are supported are:
-
-* Human
-  * `--genome GRCh37`
-* Mouse
-  * `--genome GRCm38`
-* _Drosophila_
-  * `--genome BDGP6`
-* _S. cerevisiae_
-  * `--genome 'R64-1-1'`
-
-> There are numerous others - check the config file for more.
-
-Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
-
-The syntax for this reference configuration is as follows:
-
-<!-- TODO nf-core: Update reference genome example according to what is needed -->
-
-```nextflow
-params {
-  genomes {
-    'GRCh37' {
-      fasta   = '<path to the genome fasta file>' // Used if no star index given
-    }
-    // Any number of additional genomes, key is used with --genome
-  }
-}
-```
-
-<!-- TODO nf-core: Describe reference path flags -->
-
-### `--fasta`
-
-If you prefer, you can specify the full path to your reference genome when you run the pipeline:
+Example file:
 
 ```bash
---fasta '[path to Fasta reference]'
+AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG    AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT
 ```
 
-### `--igenomes_ignore`
+See [AdapterRemoval documentation](https://adapterremoval.readthedocs.io/en/latest/) for more details
 
-Do not load `igenomes.config` when running the pipeline. You may choose this option if you observe clashes between custom parameters and those supplied in `igenomes.config`.
+Default: [`assets/adapter_list.txt`](assets/adapter_list.txt)
+
+### `--complexity_filter_poly_g_min`
+
+Define the minimum length of a poly-G tail to begin low complexity trimming. Default: `10`
+
+### `--megahit`
+
+Run [megahit](https://github.com/voutcn/megahit) de novo assembler
+
+*Example*:
+
+```bash
+--megahit
+```
+
+### `--metaspades`
+
+Run [metaspades](https://github.com/ablab/spades) de novo assembler
+
+*Example*:
+
+```bash
+--metaspades
+```
+
+### `--biospades`
+
+Run [biosynthetic spades](https://github.com/ablab/spades) de novo assembler
+
+*Example*:
+
+```bash
+--biospades
+```
+
+### `--minlen`
+
+Minimum length of contig to be kept. Default: `500`
+
+### `--wlen`
+
+Window length from 5' end to consider for damage estimation. Default: `20`
+
+### `--minread`
+
+Minimum number of reads aligned back to a contig to be kept. Default: `150`
+
+### `--coverage`
+
+Minimum coverage to consider contig. Default: `0.5`
+
+> **pydamage logic: `n_reads >=minread OR cov >= coverage`**
+
+### `--mindamage`
+
+Mimimum amount of C to T damage on the 5' end of the aligned reads to keep the contig. Default=`0.2`
 
 ## Job resources
 

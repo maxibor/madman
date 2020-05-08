@@ -3,7 +3,7 @@ process damageprofiler {
 
     label 'process_high'
 
-    publishDir "${params.results}/damageProfiler/${name}", mode: 'copy'
+    publishDir "${params.outdir}/damageProfiler/${name}_${step}", mode: 'copy'
 
     input:
         tuple val(name), path(contig), path(bam)
