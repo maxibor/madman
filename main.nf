@@ -53,7 +53,9 @@ def summary = [:]
 summary['Reads'] = params.reads
 summary['phred'] = params.phred
 summary['single_end'] = params.single_end
-summary['assembly tool'] = params.assembly_tool 
+summary['Run Megahit'] = params.megahit
+summary['Run MetaSpades'] = params.metaspades
+summary['Run Biosynthetic Spades'] = params.biospades
 summary['minlen'] = params.minlen
 summary['minread'] = params.minread
 summary['results'] = params.results
@@ -71,110 +73,49 @@ include {POST_ASSEMBLY as POST_ASSEMBLY_MEGAHIT ; POST_ASSEMBLY as POST_ASSEMBLY
 
 workflow {
     PRE_ASSEMBLY(ch_reads, ch_adapter_list)
+    quast_pre_ch = Channel.empty()
+    quast_post_ch = Channel.empty()
+    damageprofiler_pre_ch = Channel.empty()
+    damageprofiler_post_ch = Channel.empty()
+    prokka_ch = Channel.empty()
 
-    if (params.assembly_tool.toString().contains('megahit')) {
-        println("MOIHGOIWEHOIWEVIEWUO")
+    if (params.megahit) {
         megahit(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_MEGAHIT(megahit.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "megahit")
-        POST_ASSEMBLY_MEGAHIT.out.quast_pre.set {megahit_quast_pre}
-    } else {
-        megahit_quast_pre = Channel.empty()
-        POST_ASSEMBLY_MEGAHIT.out.quast_post = Channel.empty()
-        POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre = Channel.empty()
-        POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post = Channel.empty()
-        POST_ASSEMBLY_MEGAHIT.out.prokka = Channel.empty()
+        quast_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.quast_pre)
+        quast_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.quast_post)
+        damageprofiler_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre)
+        damageprofiler_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post)
+        prokka_ch.mix(POST_ASSEMBLY_MEGAHIT.out.prokka)
     }
 
-    if (params.assembly_tool.toString().contains('biospades')) {
+    if (params.biospades) {
         biospades(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_BIOSPADES(biospades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "biospades")
-        POST_ASSEMBLY_BIOSPADES.out.quast_pre.set {biospades_quast_pre}
-    } else {
-        biospades_quast_pre = Channel.empty()
-        POST_ASSEMBLY_BIOSPADES.out.quast_pre = Channel.empty()
-        POST_ASSEMBLY_BIOSPADES.out.quast_post = Channel.empty()
-        POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre = Channel.empty()
-        POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post = Channel.empty()
-        POST_ASSEMBLY_BIOSPADES.out.prokka = Channel.empty()
-    }
+        quast_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_pre)
+        quast_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_post)
+        damageprofiler_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre)
+        damageprofiler_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post)
+        prokka_ch.mix(POST_ASSEMBLY_BIOSPADES.out.prokka)
+    } 
 
-    if (params.assembly_tool.toString().contains('metaspades')) {
+    if (params.metaspades) {
         metaspades(PRE_ASSEMBLY.out.trimmed_reads)
-        POST_ASSEMBLY_METASPADES(biospades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "metaspades")
-    } else {
-        POST_ASSEMBLY_METASPADES.out.quast_pre = Channel.empty()
-        POST_ASSEMBLY_METASPADES.out.quast_post = Channel.empty()
-        POST_ASSEMBLY_METASPADES.out.damageprofiler_pre = Channel.empty()
-        POST_ASSEMBLY_METASPADES.out.damageprofiler_post = Channel.empty()
-        POST_ASSEMBLY_METASPADES.out.prokka = Channel.empty()
+        POST_ASSEMBLY_METASPADES(metaspades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "metaspades")
+        quast_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_pre)
+        quast_post_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_post)
+        damageprofiler_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_pre)
+        damageprofiler_post_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_post)
+        prokka_ch.mix(POST_ASSEMBLY_METASPADES.out.prokka)
     }
-
-    megahit_quast_pre.mix(biospades_quast_pre).set {ch_quast_pre}
-
-
-    // POST_ASSEMBLY_MEGAHIT.out.quast_pre
-    //     .mix(POST_ASSEMBLY_BIOSPADES.out.quast_pre, POST_ASSEMBLY_METASPADES.out.quast_pre)
-    //     .set {quast_pre_ch}
-
-    // POST_ASSEMBLY_MEGAHIT.out.quast_post
-    //     .mix(POST_ASSEMBLY_BIOSPADES.out.quast_post, POST_ASSEMBLY_METASPADES.out.quast_post)
-    //     .set {quast_post}
-
-
-    // POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre
-    //     .mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre, POST_ASSEMBLY_METASPADES.out.damageprofiler_pre)
-    //     .set {damageprofiler_pre}
-
-    // POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post
-    //     .mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post, POST_ASSEMBLY_METASPADES.out.damageprofiler_post)
-    //     .set {damageprofiler_post}
-
-    // POST_ASSEMBLY_MEGAHIT.out.prokka
-    //     .mix(POST_ASSEMBLY_BIOSPADES.out.prokka, POST_ASSEMBLY_METASPADES.out.prokka)
-    //     .set {prokka}
-    
     
     multiqc(PRE_ASSEMBLY.out.adapater_removal_logs.collect().ifEmpty([]), 
             PRE_ASSEMBLY.out.fastqc_logs.collect().ifEmpty([]), 
             PRE_ASSEMBLY.out.fastp_logs.collect().ifEmpty([]),
-            POST_ASSEMBLY_MEGAHIT.out.quast_pre.collect().ifEmpty([]),
-            POST_ASSEMBLY_MEGAHIT.out.quast_post.collect().ifEmpty([]),
-            POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre.collect().ifEmpty([]),
-            POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post.collect().ifEmpty([]),
-            POST_ASSEMBLY_MEGAHIT.out.prokka.collect().ifEmpty([]),
+            quast_pre_ch.collect().ifEmpty([]),
+            quast_post_ch.collect().ifEmpty([]),
+            damageprofiler_pre_ch.collect().ifEmpty([]),
+            damageprofiler_post_ch.collect().ifEmpty([]),
+            prokka_ch.collect().ifEmpty([]),
             ch_multiqc_config)
-
-
 }
-
-// // Channel duplication and tuple index renaming to execute megahit and/or metaspades
-
-// ch_trimmed_reads_mapping_pre.into {ch_trimmed_reads_mapping_megahit_pre; ch_trimmed_reads_mapping_metaspades_pre}
-
-// ch_trimmed_reads_mapping_megahit_pre
-//     .map {it -> [it[0]+"_megahit",[file(it[1][0]),file(it[1][1])]]}
-//     .set {ch_trimmed_reads_mapping_megahit}
-// ch_trimmed_reads_mapping_metaspades_pre
-//     .map {it -> [it[0]+"_metaspades",[file(it[1][0]),file(it[1][1])]]}
-//     .set {ch_trimmed_reads_mapping_metaspades}
-
-// ch_trimmed_reads_mapping_megahit.mix(ch_trimmed_reads_mapping_metaspades).set{ch_trimmed_reads_mapping}
-
-
-// if (params.assembly_tool.toString().contains('megahit') && params.assembly_tool.toString().contains('metaspades')) {
-//     ch_trimmed_reads_assembly.into {ch_trimmed_reads_assembly_megahit; ch_trimmed_reads_assembly_metaspades}
-
-// } else if (params.assembly_tool == 'metaspades') {
-//     ch_trimmed_reads_assembly
-//         .set {ch_trimmed_reads_assembly_metaspades}
-//   ch_trimmed_reads_assembly_megahit = Channel.empty()
-// } else if (params.assembly_tool == 'megahit') {
-//     ch_trimmed_reads_assembly
-//         .set {ch_trimmed_reads_assembly_megahit}
-//     ch_trimmed_reads_assembly_metaspades = Channel.empty()
-// }
-
-
-// ch_megahit_filter.mix(ch_metaspades_filter).set{ch_contigs_filter}
-// ch_megahit_quast.mix(ch_metaspades_quast).set{ch_contigs_quast}
-// ch_megahit_log.mix(ch_metaspades_log).set{ch_contigs_log}

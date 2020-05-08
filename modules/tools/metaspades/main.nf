@@ -1,5 +1,5 @@
 process metaspades {
-    tag "metaSPAdes - $name"
+    tag "$name"
 
     label 'process_bigmem'
 
@@ -8,11 +8,10 @@ process metaspades {
     input:
         tuple val(name), path(reads)
     output:
-        tuple val(name2), path("*.metaspades_contigs.fa"), emit: contigs
-        set val(name2), path("${name}/*"), emit: all
+        tuple val(name), path("*.metaspades_contigs.fa"), emit: contigs
+        tuple val(name), path("${name}/*"), emit: spades_logs
     script:
         mem = task.memory.toGiga()
-        name2 = name+"_metaspades"
         """
         spades.py --meta \
                   -1 ${reads[0]} \
@@ -26,20 +25,19 @@ process metaspades {
 }
 
 process biospades {
-    tag "bioSPAdes - $name"
+    tag "$name"
 
     label 'process_bigmem'
 
-    publishDir "${params.results}/assembly/metaspades/${name}", mode: 'copy'
+    publishDir "${params.results}/assembly/biospades/${name}", mode: 'copy'
 
     input:
         tuple val(name), path(reads)
     output:
-        tuple val(name2), path("*.biospades_contigs.fa"), emit: contigs
-        set val(name2), path("${name}/*"), emit: all
+        tuple val(name), path("*.biospades_contigs.fa"), emit: contigs
+        set val(name), path("${name}/*"), emit: spades_logs
     script:
         mem = task.memory.toGiga()
-        name2 = name+"_biospades"
         """
         spades.py --meta \
                   --bio \

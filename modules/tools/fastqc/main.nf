@@ -1,5 +1,5 @@
 process fastqc {
-    tag "FastQC - $name"
+    tag "$name"
 
     label 'process_low'
 

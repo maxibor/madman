@@ -1,5 +1,5 @@
 process fastp {
-    tag "fastp - $name"
+    tag "$name"
 
     label 'process_high'
 

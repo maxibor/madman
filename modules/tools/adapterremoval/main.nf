@@ -1,5 +1,5 @@
 process adapterremoval {
-    tag "AdapterRemoval - $name"
+    tag "$name"
 
     label 'process_medium'
 

@@ -58,19 +58,37 @@ Default: [`assets/adapter_list.txt`](assets/adapter_list.txt)
 
 Define the minimum length of a poly-G tail to begin low complexity trimming. Default: `10`
 
-### `--assembly_tool`
+### `--megahit`
 
-Choose *de novo* assembly tool. `megahit` and `metaspades`.
+Run [megahit](https://github.com/voutcn/megahit) de novo assembler
 
 *Example*:
 
 ```
---assembly_tool megahit,metaspades
+--megahit
 ```
-or 
+
+### `--metaspades`
+
+Run [metaspades](https://github.com/ablab/spades) de novo assembler
+
+*Example*:
+
 ```
---assembly_tool megahit
+--metaspades
 ```
+
+### `--biospades`
+
+Run [biosynthetic spades](https://github.com/ablab/spades) de novo assembler
+
+*Example*:
+
+```
+--biospades
+```
+
+
 
 ### `--minlen`
 
@@ -112,7 +130,7 @@ Report summarizing the execution of the pipeline
 
 ### `assembly`
 
-Contains the output of [megahit](https://github.com/voutcn/megahit) assembler:
+Contains the output of de novo assembler:
 
 - contigs
 - logfile

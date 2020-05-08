@@ -1,5 +1,5 @@
 process align_reads_to_contigs {
-    tag "Bowtie2 - $name"
+    tag "$name"
 
     label 'process_high'
 
