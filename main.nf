@@ -154,21 +154,21 @@ workflow {
     if (params.biospades) {
         biospades(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_BIOSPADES(biospades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "biospades")
-        quast_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_pre)
-        quast_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_post)
-        damageprofiler_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre)
-        damageprofiler_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post)
-        prokka_ch.mix(POST_ASSEMBLY_BIOSPADES.out.prokka)
+        quast_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_pre).set{quast_pre_ch}
+        quast_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_post).set{quast_post_ch}
+        damageprofiler_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
+        damageprofiler_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        prokka_ch.mix(POST_ASSEMBLY_BIOSPADES.out.prokka).set{prokka_ch}
     } 
 
     if (params.metaspades) {
         metaspades(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_METASPADES(metaspades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "metaspades")
-        quast_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_pre)
-        quast_post_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_post)
-        damageprofiler_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_pre)
-        damageprofiler_post_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_post)
-        prokka_ch.mix(POST_ASSEMBLY_METASPADES.out.prokka)
+        quast_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_pre).set{quast_pre_ch}
+        quast_post_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_post).set{quast_post_ch}
+        damageprofiler_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
+        damageprofiler_post_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        prokka_ch.mix(POST_ASSEMBLY_METASPADES.out.prokka).set{prokka_ch}
     }
     
     multiqc(PRE_ASSEMBLY.out.adapater_removal_logs.collect().ifEmpty([]), 

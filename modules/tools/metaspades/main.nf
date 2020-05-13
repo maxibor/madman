@@ -9,7 +9,7 @@ process metaspades {
         tuple val(name), path(reads)
     output:
         tuple val(name), path("*.metaspades_contigs.fa"), emit: contigs
-        tuple val(name), path("${name}/*"), emit: spades_logs
+        tuple val(name), path("${name}/*"), emit: metaspades_logs
     script:
         mem = task.memory.toGiga()
         """
@@ -35,7 +35,7 @@ process biospades {
         tuple val(name), path(reads)
     output:
         tuple val(name), path("*.biospades_contigs.fa"), emit: contigs
-        set val(name), path("${name}/*"), emit: spades_logs
+        tuple val(name), path("${name}/*"), emit: biospades_logs
     script:
         mem = task.memory.toGiga()
         """
