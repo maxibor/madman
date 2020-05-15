@@ -2,6 +2,7 @@ name: madman-0.1-dev
 channels:
   - conda-forge
   - bioconda
+  - maxibor
   - defaults
 dependencies:
   - adapterremoval
@@ -29,4 +30,4 @@ dependencies:
   - pymdown-extensions
   - pygments
   - pip:
-    - git+https://github.com/maxibor/pydamage.git
+    - pydamage
