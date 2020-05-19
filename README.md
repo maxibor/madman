@@ -2,8 +2,9 @@
 
 <img src="assets/logo/madman_logo.png" alt="madman logo" width="300"/>
 
-
 # MADMAN: **M**etagenomic **A**ssembly of **A**ncient **D**a**M**aged reads with **N**extflow
+
+> **...because who in their right mind would try this?!**
 
 Nextflow assembly pipeline for ancient DNA
 
