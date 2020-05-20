@@ -10,10 +10,12 @@ process damageprofiler {
         val(step)
     output:
         path("*.dmgprof_${step}.json")
+        file("*.pdf")
     script:
         outfile = name+".dmgprof_${step}.json"
+        ref = ${contig.baseName()}
         """
-        damageprofiler -i $bam -r $contig -o tmp
+        damageprofiler -i $bam -r $contig -o tmp -s ${ref}
         mv tmp/${name}.sorted/dmgprof.json $outfile
         """
 }
