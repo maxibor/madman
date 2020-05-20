@@ -6,14 +6,11 @@
 [![GitHub Actions Linting Status](https://github.com/nf-core/madman/workflows/nf-core%20linting/badge.svg)](https://github.com/nf-core/madman/actions)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
 
-
-
-
 ## Introduction
 
 MADMAN is an assembly pipeline for ancient DNA.
 
-MADMAN performs intial pre-processing of input FASTQ files. It then performs metagenomic _de novo_ assembly with one or multiple assemblers, runs assembly quality-control, and finally screens for potentially truly-ancient contigs through fitting of damage patterns to typical ancient DNA damage distributions. 
+MADMAN performs intial pre-processing of input FASTQ files. It then performs metagenomic _de novo_ assembly with one or multiple assemblers, runs assembly quality-control, and finally screens for potentially truly-ancient contigs through fitting of damage patterns to typical ancient DNA damage distributions.
 
 It is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker containers making installation trivial and results highly reproducible.
 
@@ -83,7 +80,7 @@ You can cite the `nf-core` publication as follows:
 
 ## Help
 
-```
+```txt
 $ nextflow run maxibor/madman --help
 N E X T F L O W  ~  version 19.10.0
 Launching `maxibor/madman` [maniac_hypatia] - revision: cf6cdbd49c
@@ -116,4 +113,4 @@ Options:
 
 ## Workflow
 
-![](assets/misc/dag.png)
+![Workflow graph](assets/misc/dag.png)
