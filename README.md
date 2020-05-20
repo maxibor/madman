@@ -6,8 +6,6 @@
 [![GitHub Actions Linting Status](https://github.com/maxibor/madman/workflows/nf-core%20linting/badge.svg)](https://github.com/maxibor/madman/actions)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
 
-
-
 ## Introduction
 
 MADMAN is an assembly pipeline for ancient DNA.
