@@ -25,9 +25,7 @@ For further reading and documentation see the [FastQC help](http://www.bioinform
 * `zips/sample_fastqc.zip`
   * zip file containing the FastQC report, tab-delimited data file and plot images
 
-
 ## **Output directory: `results/multiqc`**
-
 
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
 
@@ -44,19 +42,19 @@ For more information about how to use MultiQC reports, see [http://multiqc.info]
 
 Contains the output of de novo assembler:
 
-- contigs
-- logfile
+* contigs (in FASTA format)
+* logfile
 
 ## **Output directory: `alignment`**
 
-Contains the bam file of the reads aligned back to the contigs
+Contains BAM files of the reads aligned back to the contigs
 
 ## **Output directory: `fasta_filter`**
 
-Contains the contigs filter:
+Contains the filtered contigs:
 
-- by size: `*.size_filtered.fa`
-- by damage (pydamage) and size `*.ancient_filtered.fa`
+* by size: `*.size_filtered.fa`
+* by damage (pydamage) and size `*.ancient_filtered.fa`
 
 ## **Output directory: `pydamage`**
 
@@ -64,8 +62,12 @@ Contains the [pydamage](https://github.com/maxibor/pydamage) ancient DNA estimat
 
 ## **Output directory: `quast`**
 
-Contains the [Quast](https://github.com/ablab/quast) assembly statistics report files
+Contains the [Quast](https://github.com/ablab/quast) assembly statistics report files.
+
+This can help you assess the quality of the assemblies (contig lengths, N50s, chimeric contigs etc.).
 
 ## **Output directory: `prokka`**
 
-Contains the [prokka](https://github.com/tseemann/prokka) annotation report files
+Contains the [prokka](https://github.com/tseemann/prokka) annotation report files.
+
+This allows assessment of assembly completeness, such as defined in with the [MIMAG criteria](https://doi.org/10.1038/nbt.3893)
