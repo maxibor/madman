@@ -9,43 +9,44 @@
     * [Updating the pipeline](#updating-the-pipeline)
     * [Reproducibility](#reproducibility)
   * [Main arguments](#main-arguments)
-    * [`-profile`](#profile)
-    * [`--reads`](#reads)
-    * [`--single_end`](#singleend)
-    * [`--phred`](#phred)
-    * [`--adapter_list`](#adapterlist)
-    * [`--complexity_filter_poly_g_min`](#complexityfilterpolygmin)
-    * [`--megahit`](#megahit)
-    * [`--metaspades`](#metaspades)
-    * [`--biospades`](#biospades)
-    * [`--minlen`](#minlen)
-    * [`--wlen`](#wlen)
-    * [`--minread`](#minread)
-    * [`--coverage`](#coverage)
-    * [`--mindamage`](#mindamage)
+    * [`-profile`](#-profile)
+    * [`--reads`](#--reads)
+    * [`--single_end`](#--single_end)
+    * [`--phred`](#--phred)
+    * [`--adapter_list`](#--adapter_list)
+    * [`--complexity_filter_poly_g_min`](#--complexity_filter_poly_g_min)
+    * [`--megahit`](#--megahit)
+    * [`--metaspades`](#--metaspades)
+    * [`--biospades`](#--biospades)
+    * [`--minlen`](#--minlen)
+    * [`--wlen`](#--wlen)
+    * [`--minread`](#--minread)
+    * [`--coverage`](#--coverage)
+    * [`--mindamage`](#--mindamage)
+    * [`--pydamage_plot`](#--pydamage_plot)
   * [Job resources](#job-resources)
     * [Automatic resubmission](#automatic-resubmission)
     * [Custom resource requests](#custom-resource-requests)
   * [AWS Batch specific parameters](#aws-batch-specific-parameters)
-    * [`--awsqueue`](#awsqueue)
-    * [`--awsregion`](#awsregion)
-    * [`--awscli`](#awscli)
+    * [`--awsqueue`](#--awsqueue)
+    * [`--awsregion`](#--awsregion)
+    * [`--awscli`](#--awscli)
   * [Other command line parameters](#other-command-line-parameters)
-    * [`--outdir`](#outdir)
-    * [`--email`](#email)
-    * [`--email_on_fail`](#emailonfail)
-    * [`--max_multiqc_email_size`](#maxmultiqcemailsize)
-    * [`-name`](#name)
-    * [`-resume`](#resume)
-    * [`-c`](#c)
-    * [`--custom_config_version`](#customconfigversion)
-    * [`--custom_config_base`](#customconfigbase)
-    * [`--max_memory`](#maxmemory)
-    * [`--max_time`](#maxtime)
-    * [`--max_cpus`](#maxcpus)
-    * [`--plaintext_email`](#plaintextemail)
-    * [`--monochrome_logs`](#monochromelogs)
-    * [`--multiqc_config`](#multiqcconfig)
+    * [`--outdir`](#--outdir)
+    * [`--email`](#--email)
+    * [`--email_on_fail`](#--email_on_fail)
+    * [`--max_multiqc_email_size`](#--max_multiqc_email_size)
+    * [`-name`](#-name)
+    * [`-resume`](#-resume)
+    * [`-c`](#-c)
+    * [`--custom_config_version`](#--custom_config_version)
+    * [`--custom_config_base`](#--custom_config_base)
+    * [`--max_memory`](#--max_memory)
+    * [`--max_time`](#--max_time)
+    * [`--max_cpus`](#--max_cpus)
+    * [`--plaintext_email`](#--plaintext_email)
+    * [`--monochrome_logs`](#--monochrome_logs)
+    * [`--multiqc_config`](#--multiqc_config)
 
 ## Introduction
 
@@ -226,6 +227,13 @@ Minimum coverage to consider contig. Default: `0.5`
 ### `--mindamage`
 
 Mimimum amount of C to T damage on the 5' end of the aligned reads to keep the contig. Default=`0.2`
+
+### `--pydamage_plot`
+
+Create pydamage plot.
+Without this flag (default), no pydamage plots are created
+
+> Creating the pydamage plots for each contig takes a lot of time !
 
 ## Job resources
 

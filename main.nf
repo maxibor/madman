@@ -80,6 +80,7 @@ summary['single_end'] = params.single_end
 summary['Run Megahit'] = params.megahit
 summary['Run MetaSpades'] = params.metaspades
 summary['Run Biosynthetic Spades'] = params.biospades
+summary['Make Pydamage plots'] = params.pydamage_plot
 summary['minlen'] = params.minlen
 summary['minread'] = params.minread
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
@@ -103,7 +104,7 @@ if (params.email || params.email_on_fail) {
     summary['E-mail on failure'] = params.email_on_fail
     summary['MultiQC maxsize']   = params.max_multiqc_email_size
 }
-log.info summary.collect { k,v -> "${k.padRight(18)}: $v" }.join("\n")
+log.info summary.collect { k,v -> "${k.padRight(25)}: $v" }.join("\n")
 log.info "-\033[2m--------------------------------------------------\033[0m-"
 
 // Check the hostnames against configured profiles

@@ -4,7 +4,7 @@
 
 [![GitHub Actions CI Status](https://github.com/nf-core/madman/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/madman/actions)
 [![GitHub Actions Linting Status](https://github.com/nf-core/madman/workflows/nf-core%20linting/badge.svg)](https://github.com/nf-core/madman/actions)
-[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.04.1-brightgreen.svg)](https://www.nextflow.io/)
 
 
 

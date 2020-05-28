@@ -51,6 +51,7 @@ def get_basename(file_name):
         basename = file_name.split(".")[0]
     return(basename)
 
+
 def parse_fasta(fasta_file):
     """Parse a fasta file
 
@@ -58,7 +59,7 @@ def parse_fasta(fasta_file):
         fasta_file (str): Path to fasta file
     Returns:
         (dict): Seqname as key, sequence as value
-    """   
+    """
 
     fastadict = {}
     with open(fasta_file, "r") as f:
@@ -71,19 +72,20 @@ def parse_fasta(fasta_file):
                 fastadict[seqname].append(line)
     return(fastadict)
 
+
 def write_fasta(fasta_dict, outfile):
     """Write fasta to file
 
     Args:
         fasta_dict (dict): Seqname as key, sequence as value
         outfile (str): Path to output file
-    """    
+    """
     with open(outfile, "w") as fw:
         for seq in list(fasta_dict.keys()):
             fw.write(seq + "\n")
-            fw.write("\n".join(wrap(("".join(fasta_dict[seq])), width = 80)))
+            fw.write("\n".join(wrap(("".join(fasta_dict[seq])), width=80)))
             fw.write("\n")
-        
+
 
 def get_ancient_contigs(pydamage_report, alpha=0.05, mindamage=0.2):
     """Get name of contigs passing Q-value for ancient damage
@@ -93,10 +95,11 @@ def get_ancient_contigs(pydamage_report, alpha=0.05, mindamage=0.2):
         alpha (float): alpha threshold
     Returns:
         (list): list of contigs name passing threshold
-    """        
+    """
 
     d = pd.read_csv(pydamage_report, index_col='reference')
-    return(list(d.query(f"qvalue <= {alpha} and geom_pmax >= {mindamage}").index))
+    return(list(d.query(f"qvalue <= {alpha} and damage_model_pmax >= {mindamage}").index))
+
 
 def filter_contigs(all_contigs, ancient_contigs):
     """Filter contigs if in ancient contigs
@@ -114,6 +117,7 @@ def filter_contigs(all_contigs, ancient_contigs):
             a_contigs[c] = all_contigs[c]
     return(a_contigs)
 
+
 if __name__ == "__main__":
     CONTIGS, PYDAMAGE, ALPHA, MINDAMAGE, OUTFILE = _get_args()
 
@@ -125,6 +129,3 @@ if __name__ == "__main__":
     ancient_contigs_names = get_ancient_contigs(PYDAMAGE, ALPHA, MINDAMAGE)
     ancient_contigs = filter_contigs(all_contigs, ancient_contigs_names)
     write_fasta(ancient_contigs, OUTFILE)
-    
-
-
