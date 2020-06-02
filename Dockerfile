@@ -5,7 +5,7 @@ LABEL authors="Maxime Borry" \
 # Install the conda environment
 COPY environment.yml /
 RUN conda env create -f /environment.yml && conda clean -a
-RUN conda env export --name madman-0.1-dev > madman-0.1-dev.yml
-ENV PATH /opt/conda/envs/madman-0.1-dev/bin:$PATH
+RUN conda env export --name nf-core-madman-1.0dev > nf-core-madman-1.0dev.yml
+ENV PATH /opt/conda/envs/nf-core-madman-1.0dev/bin:$PATH
 
 # Dump the details of the installed packages to a file for posterity
