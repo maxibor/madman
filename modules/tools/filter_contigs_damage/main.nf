@@ -2,6 +2,7 @@ process filter_contigs_damage {
     tag "$name"
 
     label 'process_low'
+    label 'process_ignore'
 
     publishDir "${params.outdir}/fasta_filter/${name}", mode: 'copy'
 

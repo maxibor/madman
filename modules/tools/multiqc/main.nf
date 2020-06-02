@@ -2,6 +2,7 @@ process multiqc {
     tag "$custom_runName"
 
     label 'process_low'
+    label 'process_mandatory'
 
     publishDir "${params.outdir}", mode: 'copy'
 

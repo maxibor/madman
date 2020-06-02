@@ -3,7 +3,7 @@ include {damageprofiler as damageprofiler_pre; damageprofiler as damageprofiler_
 include filter_contigs_length from "$baseDir/modules/tools/filter_contigs_length/main.nf" params(params)
 include filter_contigs_damage from "$baseDir/modules/tools/filter_contigs_damage/main.nf" params(params)
 include megahit from "$baseDir/modules/tools/megahit/main.nf" params(params)
-include {metaspades; biospades} from "$baseDir/modules/tools/metaspades/main.nf" params(params)
+include {metaspades; biospades} from "$baseDir/modules/tools/spades/main.nf" params(params)
 include prokka from "$baseDir/modules/tools/prokka/main.nf" params(params)
 include pydamage from "$baseDir/modules/tools/pydamage/main.nf" params(params)
 include {quast as quast_pre ; quast as quast_post} from "$baseDir/modules/tools/quast/main.nf" params(params)

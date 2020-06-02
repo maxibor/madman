@@ -2,6 +2,7 @@ process align_reads_to_contigs {
     tag "$name"
 
     label 'process_high'
+    label 'process_ignore'
 
     publishDir "${params.outdir}/alignment/${name}", mode: 'copy'
 

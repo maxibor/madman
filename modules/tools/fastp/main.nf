@@ -2,7 +2,7 @@ process fastp {
     tag "$name"
 
     label 'process_high'
-
+    label 'process_mantory'
     input:
         tuple val(name), path(reads)
 

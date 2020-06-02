@@ -2,6 +2,7 @@ process megahit {
     tag "MEGAHIT - $name"
 
     label 'process_bigmem'
+    label 'process_mandatory'
 
     publishDir "${params.outdir}/assembly/megahit/${name}", mode: 'copy'
 

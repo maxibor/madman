@@ -2,6 +2,7 @@ process adapterremoval {
     tag "$name"
 
     label 'process_medium'
+    label 'process_mandatory'
 
     input:
         tuple name, path(reads)

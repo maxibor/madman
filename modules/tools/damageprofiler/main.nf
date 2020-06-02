@@ -2,6 +2,7 @@ process damageprofiler {
     tag "$name"
 
     label 'process_high'
+    label 'process_ignore'
 
     publishDir "${params.outdir}/damageProfiler/${name}_${step}", mode: 'copy'
 

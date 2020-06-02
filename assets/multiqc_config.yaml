@@ -27,3 +27,4 @@ top_modules:
     - 'nf-core-madman-summary'
 
 export_plots: true
+prokka_fn_snames: True

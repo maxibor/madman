@@ -127,7 +127,7 @@ Channel.from(summary.collect{ [it.key, it.value] })
     .set { ch_workflow_summary }
 
 include megahit from "$baseDir/modules/tools/megahit/main.nf" params(params)
-include {metaspades ; biospades} from "$baseDir/modules/tools/metaspades/main.nf" params(params)
+include {metaspades ; biospades} from "$baseDir/modules/tools/spades/main.nf" params(params)
 include multiqc from "$baseDir/modules/tools/multiqc/main.nf" params(params)
 include PRE_ASSEMBLY from "$baseDir/modules/workflows/pre_assembly.nf" params(params)
 include {POST_ASSEMBLY as POST_ASSEMBLY_MEGAHIT ; POST_ASSEMBLY as POST_ASSEMBLY_BIOSPADES; POST_ASSEMBLY as POST_ASSEMBLY_METASPADES} from "$baseDir/modules/workflows/post_assembly.nf" params(params)
