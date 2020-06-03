@@ -15,12 +15,12 @@ process fastp {
             out1 = name+".pair1.trimmed.fq.gz"
             out2 = name+".pair2.trimmed.fq.gz"
             """
-            fastp --in1 ${reads[0]} --in2 ${reads[1]} --out1 $out1 --out2 $out2 -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json ${name}_fastp.json 
+            fastp --in1 ${reads[0]} --in2 ${reads[1]} --out1 $out1 --out2 $out2 -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json ${name}.json 
             """
         } else {
             se_out = name+".trimmed.fq.gz"
             """
-            fastp --in1 ${reads[0]} --out1 $se_out -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json ${name}_fastp.json 
+            fastp --in1 ${reads[0]} --out1 $se_out -A -g --poly_g_min_len "${params.complexity_filter_poly_g_min}" -Q -L -w ${task.cpus} --json ${name}.json 
             """
         }
 }

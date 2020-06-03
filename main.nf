@@ -65,7 +65,8 @@ Channel
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\n" }
 	.set {ch_reads}
 
-ch_multiqc_config = file(params.multiqc_config, checkIfExists: true)
+multiqc_config = params.modern ? params.multiqc_config_modern : params.multiqc_config_ancient
+ch_multiqc_config = file(multiqc_config, checkIfExists: true)
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 ch_adapter_list = file(params.adapter_list, checkIfExists: true)
 
@@ -76,7 +77,8 @@ def summary = [:]
 if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Reads'] = params.reads
 summary['phred'] = params.phred
-summary['single_end'] = params.single_end
+summary['Single End'] = params.single_end
+summary['Modern mode'] = params.modern
 summary['Run Megahit'] = params.megahit
 summary['Run MetaSpades'] = params.metaspades
 summary['Run Biosynthetic Spades'] = params.biospades
@@ -130,7 +132,17 @@ include megahit from "$baseDir/modules/tools/megahit/main.nf" params(params)
 include {metaspades ; biospades} from "$baseDir/modules/tools/spades/main.nf" params(params)
 include multiqc from "$baseDir/modules/tools/multiqc/main.nf" params(params)
 include PRE_ASSEMBLY from "$baseDir/modules/workflows/pre_assembly.nf" params(params)
-include {POST_ASSEMBLY as POST_ASSEMBLY_MEGAHIT ; POST_ASSEMBLY as POST_ASSEMBLY_BIOSPADES; POST_ASSEMBLY as POST_ASSEMBLY_METASPADES} from "$baseDir/modules/workflows/post_assembly.nf" params(params)
+if (params.modern){
+    include {POST_ASSEMBLY_MODERN as POST_ASSEMBLY_MEGAHIT ; 
+             POST_ASSEMBLY_MODERN as POST_ASSEMBLY_BIOSPADES; 
+             POST_ASSEMBLY_MODERN as POST_ASSEMBLY_METASPADES
+            } from "$baseDir/modules/workflows/post_assembly.nf" params(params)
+} else {
+    include {POST_ASSEMBLY_ANCIENT as POST_ASSEMBLY_MEGAHIT ; 
+             POST_ASSEMBLY_ANCIENT as POST_ASSEMBLY_BIOSPADES; 
+             POST_ASSEMBLY_ANCIENT as POST_ASSEMBLY_METASPADES
+            } from "$baseDir/modules/workflows/post_assembly.nf" params(params)
+}
 include {output_documentation ; get_software_versions} from "$baseDir/modules/tools/nf_core_utils/main.nf" params(params)
 
 workflow {
@@ -146,9 +158,11 @@ workflow {
         megahit(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_MEGAHIT(megahit.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "megahit")
         quast_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.quast_pre).set{quast_pre_ch}
-        quast_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.quast_post).set{quast_post_ch}
-        damageprofiler_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre).set{damageprofiler_pre_ch}
-        damageprofiler_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post).set{damageprofiler_post_ch}
+        if (! params.modern) {
+            quast_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.quast_post).set{quast_post_ch}
+            damageprofiler_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre).set{damageprofiler_pre_ch}
+            damageprofiler_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post).set{damageprofiler_post_ch}
+        }
         prokka_ch.mix(POST_ASSEMBLY_MEGAHIT.out.prokka).set{prokka_ch}
     }
 
@@ -156,9 +170,11 @@ workflow {
         biospades(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_BIOSPADES(biospades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "biospades")
         quast_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_pre).set{quast_pre_ch}
-        quast_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_post).set{quast_post_ch}
-        damageprofiler_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
-        damageprofiler_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        if (! params.modern){
+            quast_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_post).set{quast_post_ch}
+            damageprofiler_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
+            damageprofiler_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        }
         prokka_ch.mix(POST_ASSEMBLY_BIOSPADES.out.prokka).set{prokka_ch}
     } 
 
@@ -166,9 +182,11 @@ workflow {
         metaspades(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_METASPADES(metaspades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "metaspades")
         quast_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_pre).set{quast_pre_ch}
-        quast_post_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_post).set{quast_post_ch}
-        damageprofiler_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
-        damageprofiler_post_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        if (! params.modern){
+            quast_post_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_post).set{quast_post_ch}
+            damageprofiler_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
+            damageprofiler_post_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        }
         prokka_ch.mix(POST_ASSEMBLY_METASPADES.out.prokka).set{prokka_ch}
     }
     

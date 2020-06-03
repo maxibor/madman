@@ -12,6 +12,7 @@
     * [`-profile`](#-profile)
     * [`--reads`](#--reads)
     * [`--single_end`](#--single_end)
+    * [`--modern`](#--modern)
     * [`--phred`](#--phred)
     * [`--adapter_list`](#--adapter_list)
     * [`--complexity_filter_poly_g_min`](#--complexity_filter_poly_g_min)
@@ -149,6 +150,10 @@ By default, the pipeline expects paired-end data. If you have single-end data, y
 ```
 
 It is not possible to run a mixture of single-end and paired-end files in one run.
+
+### `--modern`
+
+If specified, skips the ancient DNA parts of MADMAN (pydamage, DamageProfiler)
 
 ### `--phred`
 
