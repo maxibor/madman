@@ -27,16 +27,18 @@ def helpMessage() {
 
     Settings:
       --phred                           Specifies the fastq quality encoding (33 | 64). Default: ${params.phred}
-      --single_end                      To specify if reads are single-end.
+      --single_end                      To specify if reads are single-end. Default: ${params.single_end}
+      --modern                          To specify if data are modern. Default: ${params.modern}
       --adapter_list                    List of sequencing adapters to trim. Default: ${params.adapter_list}
       --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: ${params.complexity_filter_poly_g_min}
+      --megahit                         Specify to run megahit. Default: ${params.megahit}
+      --metaspades                      Specify to run metaSPAdes. Default: ${params.metaspades}
+      --biospades                       Specify to run BiosyntheticSPAdes. Default: ${params.biospades}
       --minlen                          Minimum contig length to retain. Default:  ${params.minlen}
       --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
       --coverage                        Minimum coverage to consider contig. Default: ${params.coverage}
       --wlen                            Window length from 5' end to consider for damage estimation. Default: ${params.wlen}
-      --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
-      --assembly_tool                   Choose de novo assembly tool, seperated by ',' (megahit | metaspades). Default: ${params.assembly_tool}
-      
+      --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}      
 
     Options:
       --results                         The output directory where the results will be saved. Default: ${params.outdir}
@@ -83,8 +85,11 @@ summary['Run Megahit'] = params.megahit
 summary['Run MetaSpades'] = params.metaspades
 summary['Run Biosynthetic Spades'] = params.biospades
 summary['Make Pydamage plots'] = params.pydamage_plot
-summary['minlen'] = params.minlen
-summary['minread'] = params.minread
+summary['Min len'] = params.minlen
+summary['Min nb read'] = params.minread
+summary['Min cov'] = params.coverage
+summary['Pydamage window'] = params.wlen
+summary['Min damage'] = params.mindamage
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
