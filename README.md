@@ -80,8 +80,17 @@ You can cite the `nf-core` publication as follows:
 
 ```txt
 $ nextflow run maxibor/madman --help
-N E X T F L O W  ~  version 19.10.0
-Launching `maxibor/madman` [maniac_hypatia] - revision: cf6cdbd49c
+N E X T F L O W  ~  version 20.04.1
+Launching `./main.nf` [focused_mendel] - revision: 41525792de
+WARN: DSL 2 IS AN EXPERIMENTAL FEATURE UNDER DEVELOPMENT -- SYNTAX MAY CHANGE IN FUTURE RELEASE
+----------------------------------------------------
+                                        ,--./,-.
+        ___     __   __   __   ___     /,-._.--~'
+  |\ | |__  __ /  ` /  \ |__) |__         }  {
+  | \| |       \__, \__/ |  \ |___     \`-._,-`-,
+                                        `._,._,'
+  nf-core/madman v1.0dev
+----------------------------------------------------
 MADMAN: Metagenomic Assembly of Ancient DaMaged reads with Nextflow
  Homepage: https://github.com/maxibor/madman
  Author: Maxime Borry <borry@shh.mpg.de>
@@ -94,15 +103,18 @@ Mandatory arguments:
 
 Settings:
   --phred                           Specifies the fastq quality encoding (33 | 64). Default: 33
-  --single_end                      To specify if reads are single-end.
+  --single_end                      To specify if reads are single-end. Default: false
+  --modern                          To specify if data are modern. Default: false
   --adapter_list                    List of sequencing adapters to trim. Default: /Users/borry/Documents/GitHub/madman/assets/adapter_list.txt
   --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: 10
+  --megahit                         Specify to run megahit. Default: true
+  --metaspades                      Specify to run metaSPAdes. Default: false
+  --biospades                       Specify to run BiosyntheticSPAdes. Default: false
   --minlen                          Minimum contig length to retain. Default:  300
-  --minread                         Minimum number of reads aligned to contig to consider contig. Default: 150
-  --wlen                            Window length from 5' end to consider for damage estimation. Default: 20
+  --minread                         Minimum number of reads aligned to contig to consider contig. Default: 1000
+  --coverage                        Minimum coverage to consider contig. Default: 0.5
+  --wlen                            Window length from 5' end to consider for damage estimation. Default: 35
   --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: 0.2
-  --assembly_tool                   Choose de novo assembly tool, seperated by ',' (megahit | metaspades). Default: megahit
-
 
 Options:
   --results                         The output directory where the results will be saved. Default: ./results
