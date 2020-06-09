@@ -1,7 +1,7 @@
 process pydamage {
     tag "$name"
     
-    label 'process_medium'
+    label 'process_high'
     label 'process_ignore'
 
     publishDir "${params.outdir}/pydamage/$name", mode: 'copy'
