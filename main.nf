@@ -27,16 +27,18 @@ def helpMessage() {
 
     Settings:
       --phred                           Specifies the fastq quality encoding (33 | 64). Default: ${params.phred}
-      --single_end                      To specify if reads are single-end.
+      --single_end                      To specify if reads are single-end. Default: ${params.single_end}
+      --modern                          To specify if data are modern. Default: ${params.modern}
       --adapter_list                    List of sequencing adapters to trim. Default: ${params.adapter_list}
       --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: ${params.complexity_filter_poly_g_min}
+      --megahit                         Specify to run megahit. Default: ${params.megahit}
+      --metaspades                      Specify to run metaSPAdes. Default: ${params.metaspades}
+      --biospades                       Specify to run BiosyntheticSPAdes. Default: ${params.biospades}
       --minlen                          Minimum contig length to retain. Default:  ${params.minlen}
       --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
       --coverage                        Minimum coverage to consider contig. Default: ${params.coverage}
       --wlen                            Window length from 5' end to consider for damage estimation. Default: ${params.wlen}
-      --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}
-      --assembly_tool                   Choose de novo assembly tool, seperated by ',' (megahit | metaspades). Default: ${params.assembly_tool}
-      
+      --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}      
 
     Options:
       --results                         The output directory where the results will be saved. Default: ${params.outdir}
@@ -65,7 +67,8 @@ Channel
     .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\n" }
 	.set {ch_reads}
 
-ch_multiqc_config = file(params.multiqc_config, checkIfExists: true)
+multiqc_config = params.modern ? params.multiqc_config_modern : params.multiqc_config_ancient
+ch_multiqc_config = file(multiqc_config, checkIfExists: true)
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 ch_adapter_list = file(params.adapter_list, checkIfExists: true)
 
@@ -76,12 +79,17 @@ def summary = [:]
 if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Reads'] = params.reads
 summary['phred'] = params.phred
-summary['single_end'] = params.single_end
+summary['Single End'] = params.single_end
+summary['Modern mode'] = params.modern
 summary['Run Megahit'] = params.megahit
 summary['Run MetaSpades'] = params.metaspades
 summary['Run Biosynthetic Spades'] = params.biospades
-summary['minlen'] = params.minlen
-summary['minread'] = params.minread
+summary['Make Pydamage plots'] = params.pydamage_plot
+summary['Min len'] = params.minlen
+summary['Min nb read'] = params.minread
+summary['Min cov'] = params.coverage
+summary['Pydamage window'] = params.wlen
+summary['Min damage'] = params.mindamage
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -103,7 +111,7 @@ if (params.email || params.email_on_fail) {
     summary['E-mail on failure'] = params.email_on_fail
     summary['MultiQC maxsize']   = params.max_multiqc_email_size
 }
-log.info summary.collect { k,v -> "${k.padRight(18)}: $v" }.join("\n")
+log.info summary.collect { k,v -> "${k.padRight(25)}: $v" }.join("\n")
 log.info "-\033[2m--------------------------------------------------\033[0m-"
 
 // Check the hostnames against configured profiles
@@ -126,10 +134,20 @@ Channel.from(summary.collect{ [it.key, it.value] })
     .set { ch_workflow_summary }
 
 include megahit from "$baseDir/modules/tools/megahit/main.nf" params(params)
-include {metaspades ; biospades} from "$baseDir/modules/tools/metaspades/main.nf" params(params)
+include {metaspades ; biospades} from "$baseDir/modules/tools/spades/main.nf" params(params)
 include multiqc from "$baseDir/modules/tools/multiqc/main.nf" params(params)
 include PRE_ASSEMBLY from "$baseDir/modules/workflows/pre_assembly.nf" params(params)
-include {POST_ASSEMBLY as POST_ASSEMBLY_MEGAHIT ; POST_ASSEMBLY as POST_ASSEMBLY_BIOSPADES; POST_ASSEMBLY as POST_ASSEMBLY_METASPADES} from "$baseDir/modules/workflows/post_assembly.nf" params(params)
+if (params.modern){
+    include {POST_ASSEMBLY_MODERN as POST_ASSEMBLY_MEGAHIT ; 
+             POST_ASSEMBLY_MODERN as POST_ASSEMBLY_BIOSPADES; 
+             POST_ASSEMBLY_MODERN as POST_ASSEMBLY_METASPADES
+            } from "$baseDir/modules/workflows/post_assembly.nf" params(params)
+} else {
+    include {POST_ASSEMBLY_ANCIENT as POST_ASSEMBLY_MEGAHIT ; 
+             POST_ASSEMBLY_ANCIENT as POST_ASSEMBLY_BIOSPADES; 
+             POST_ASSEMBLY_ANCIENT as POST_ASSEMBLY_METASPADES
+            } from "$baseDir/modules/workflows/post_assembly.nf" params(params)
+}
 include {output_documentation ; get_software_versions} from "$baseDir/modules/tools/nf_core_utils/main.nf" params(params)
 
 workflow {
@@ -145,9 +163,11 @@ workflow {
         megahit(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_MEGAHIT(megahit.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "megahit")
         quast_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.quast_pre).set{quast_pre_ch}
-        quast_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.quast_post).set{quast_post_ch}
-        damageprofiler_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre).set{damageprofiler_pre_ch}
-        damageprofiler_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post).set{damageprofiler_post_ch}
+        if (! params.modern) {
+            quast_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.quast_post).set{quast_post_ch}
+            damageprofiler_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre).set{damageprofiler_pre_ch}
+            damageprofiler_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post).set{damageprofiler_post_ch}
+        }
         prokka_ch.mix(POST_ASSEMBLY_MEGAHIT.out.prokka).set{prokka_ch}
     }
 
@@ -155,9 +175,11 @@ workflow {
         biospades(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_BIOSPADES(biospades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "biospades")
         quast_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_pre).set{quast_pre_ch}
-        quast_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_post).set{quast_post_ch}
-        damageprofiler_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
-        damageprofiler_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        if (! params.modern){
+            quast_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.quast_post).set{quast_post_ch}
+            damageprofiler_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
+            damageprofiler_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        }
         prokka_ch.mix(POST_ASSEMBLY_BIOSPADES.out.prokka).set{prokka_ch}
     } 
 
@@ -165,9 +187,11 @@ workflow {
         metaspades(PRE_ASSEMBLY.out.trimmed_reads)
         POST_ASSEMBLY_METASPADES(metaspades.out.contigs, PRE_ASSEMBLY.out.trimmed_reads, "metaspades")
         quast_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_pre).set{quast_pre_ch}
-        quast_post_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_post).set{quast_post_ch}
-        damageprofiler_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
-        damageprofiler_post_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        if (! params.modern){
+            quast_post_ch.mix(POST_ASSEMBLY_METASPADES.out.quast_post).set{quast_post_ch}
+            damageprofiler_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
+            damageprofiler_post_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
+        }
         prokka_ch.mix(POST_ASSEMBLY_METASPADES.out.prokka).set{prokka_ch}
     }
     
@@ -220,7 +244,6 @@ workflow.onComplete {
     email_fields['summary']['Nextflow Build'] = workflow.nextflow.build
     email_fields['summary']['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
 
-    // TODO nf-core: If not using MultiQC, strip out this code (including params.max_multiqc_email_size)
     // On success try attach the multiqc report
     def mqc_report = null
     try {

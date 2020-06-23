@@ -3,14 +3,37 @@ include {damageprofiler as damageprofiler_pre; damageprofiler as damageprofiler_
 include filter_contigs_length from "$baseDir/modules/tools/filter_contigs_length/main.nf" params(params)
 include filter_contigs_damage from "$baseDir/modules/tools/filter_contigs_damage/main.nf" params(params)
 include megahit from "$baseDir/modules/tools/megahit/main.nf" params(params)
-include {metaspades; biospades} from "$baseDir/modules/tools/metaspades/main.nf" params(params)
+include {metaspades; biospades} from "$baseDir/modules/tools/spades/main.nf" params(params)
 include prokka from "$baseDir/modules/tools/prokka/main.nf" params(params)
 include pydamage from "$baseDir/modules/tools/pydamage/main.nf" params(params)
 include {quast as quast_pre ; quast as quast_post} from "$baseDir/modules/tools/quast/main.nf" params(params)
 
+workflow POST_ASSEMBLY_MODERN {
+    take:
+        contigs
+        trimmed_reads
+        assembler_name
 
+    main:
+        trimmed_reads
+            .map {it -> ["${it[0]}_${assembler_name}", [file(it[1][0]),file(it[1][1])]]}
+            .set { trimmed_reads }
+        contigs
+            .map {it -> ["${it[0]}_${assembler_name}", file(it[1])]}
+            .set { contigs }
 
-workflow POST_ASSEMBLY {
+        quast_pre(contigs, "pre")
+        filter_contigs_length(contigs)
+        align_reads_to_contigs(filter_contigs_length.out.join(trimmed_reads))
+        prokka(filter_contigs_length.out)
+
+    emit:
+        quast_pre = quast_pre.out
+        prokka = prokka.out
+
+}
+
+workflow POST_ASSEMBLY_ANCIENT {
     take:
         contigs
         trimmed_reads

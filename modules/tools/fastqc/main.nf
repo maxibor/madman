@@ -2,7 +2,8 @@ process fastqc {
     tag "$name"
 
     label 'process_low'
-
+    label 'process_mandatory'
+    
     input:
         tuple val(name), path(reads)
     output:

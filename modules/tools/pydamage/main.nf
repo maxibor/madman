@@ -1,6 +1,8 @@
 process pydamage {
     tag "$name"
-    label 'process_medium'
+    
+    label 'process_high'
+    label 'process_ignore'
 
     publishDir "${params.outdir}/pydamage/$name", mode: 'copy'
 
@@ -8,17 +10,17 @@ process pydamage {
         tuple val(name), path(bam)
     output:
         tuple val(name), path("*.pydamage_results.csv"), emit: csv
-        path "${name}/plots", emit: plot
+        path "${name}/plots", optional: true, emit: plot
     script:
         output = name
-        // if (params.pydamage_plot) {
-        //     plot = "--plot"
-        // } else {
-        //     plot = ""
-        // }
+        if (params.pydamage_plot) {
+            plot = "--plot"
+        } else {
+            plot = ""
+        }
         """
         samtools index $bam
-        pydamage --force -p ${task.cpus} -m ${params.minread} -c ${params.coverage} -w ${params.wlen} --plot -o $output $bam
+        pydamage --force -p ${task.cpus} -m ${params.minread} -c ${params.coverage} -w ${params.wlen} $plot -o $output $bam
         mv ${name}/pydamage_results.csv ${name}.pydamage_results.csv
         """
 }

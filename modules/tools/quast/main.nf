@@ -2,6 +2,7 @@ process quast {
     tag "$name"
 
     label 'process_medium' 
+    label 'process_ignore'
 
     publishDir "${params.outdir}/quast/${outdir}", mode: 'copy'
 

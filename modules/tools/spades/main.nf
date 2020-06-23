@@ -1,14 +1,15 @@
 process metaspades {
     tag "$name"
 
-    label 'process_bigmem'
+    label 'process_very_bigmem'
+    label 'process_mandatory'
 
     publishDir "${params.outdir}/assembly/metaspades/${name}", mode: 'copy'
 
     input:
         tuple val(name), path(reads)
     output:
-        tuple val(name), path("*.metaspades_contigs.fa"), emit: contigs
+        tuple val(name), path("*_metaspades.contigs.fa"), emit: contigs
         tuple val(name), path("${name}/*"), emit: metaspades_logs
     script:
         mem = task.memory.toGiga()
@@ -20,21 +21,22 @@ process metaspades {
                   -m $mem \
                   --phred-offset ${params.phred} \
                   -o $name
-        cp $name/contigs.fasta ${name}.metaspades_contigs.fa
+        cp $name/contigs.fasta ${name}_metaspades.contigs.fa
         """ 
 }
 
 process biospades {
     tag "$name"
 
-    label 'process_bigmem'
+    label 'process_very_bigmem'
+    label 'process_mandatory'
 
     publishDir "${params.outdir}/assembly/biospades/${name}", mode: 'copy'
 
     input:
         tuple val(name), path(reads)
     output:
-        tuple val(name), path("*.biospades_contigs.fa"), emit: contigs
+        tuple val(name), path("*_biospades.contigs.fa"), emit: contigs
         tuple val(name), path("${name}/*"), emit: biospades_logs
     script:
         mem = task.memory.toGiga()
@@ -47,6 +49,6 @@ process biospades {
                   -m $mem \
                   --phred-offset ${params.phred} \
                   -o $name
-        cp $name/gene_clusters.fasta ${name}.biospades_contigs.fa
+        cp $name/gene_clusters.fasta ${name}_biospades.contigs.fa
         """ 
 }

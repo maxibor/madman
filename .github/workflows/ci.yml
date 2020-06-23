@@ -23,6 +23,7 @@ jobs:
       - name: Pull docker image
         run: |
           docker pull maxibor/madman:dev
+          docker tag maxibor/madman:dev maxibor/madman:dev
       - name: Run pipeline with test data
         run: |
           nextflow run . -profile docker,test

@@ -1,7 +1,8 @@
 process filter_contigs_length {
     tag "$name"
 
-    label 'intenso'
+    label 'process_medium'
+    label 'process_ignore'
 
     publishDir "${params.outdir}/fasta_filter/${name}", mode: 'copy'
 
