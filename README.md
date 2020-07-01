@@ -105,16 +105,16 @@ Settings:
   --phred                           Specifies the fastq quality encoding (33 | 64). Default: 33
   --single_end                      To specify if reads are single-end. Default: false
   --modern                          To specify if data are modern. Default: false
-  --adapter_list                    List of sequencing adapters to trim. Default: /Users/borry/Documents/GitHub/madman/assets/adapter_list.txt
+  --adapter_list                    List of sequencing adapters to trim. Default: madman/assets/adapter_list.txt
   --complexity_filter_poly_g_min    Length of poly-g min for clipping to be performed. Default: 10
   --megahit                         Specify to run megahit. Default: true
   --metaspades                      Specify to run metaSPAdes. Default: false
   --biospades                       Specify to run BiosyntheticSPAdes. Default: false
-  --minlen                          Minimum contig length to retain. Default:  300
+  --minlen                          Minimum contig length (bp) to retain. Default:  300
   --minread                         Minimum number of reads aligned to contig to consider contig. Default: 1000
-  --coverage                        Minimum coverage to consider contig. Default: 0.5
-  --wlen                            Window length from 5' end to consider for damage estimation. Default: 35
-  --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: 0.2
+  --coverage                        Minimum depth coverage to consider contig. Default: 0.5
+  --wlen                            Window length from 5' end of reads to consider for damage estimation. Default: 35
+  --mindamage                       Minimum amount of CtoT damage on the first base of the 5' end of the read. Default: 0.2    
 
 Options:
   --results                         The output directory where the results will be saved. Default: ./results
