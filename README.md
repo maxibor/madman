@@ -114,7 +114,7 @@ Settings:
   --minread                         Minimum number of reads aligned to contig to consider contig. Default: 1000
   --coverage                        Minimum depth coverage to consider contig. Default: 0.5
   --wlen                            Window length from 5' end of reads to consider for damage estimation. Default: 35
-  --mindamage                       Minimum amount of CtoT damage on the first base of the 5' end of the read. Default: 0.2    
+  --mindamage                       Minimum frequency of C to T damage on the first base of the 5' end of the read. Default: 0.2
 
 Options:
   --results                         The output directory where the results will be saved. Default: ./results
