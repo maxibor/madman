@@ -34,11 +34,11 @@ def helpMessage() {
       --megahit                         Specify to run megahit. Default: ${params.megahit}
       --metaspades                      Specify to run metaSPAdes. Default: ${params.metaspades}
       --biospades                       Specify to run BiosyntheticSPAdes. Default: ${params.biospades}
-      --minlen                          Minimum contig length to retain. Default:  ${params.minlen}
+      --minlen                          Minimum contig length (bp) to retain. Default:  ${params.minlen}
       --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
-      --coverage                        Minimum coverage to consider contig. Default: ${params.coverage}
-      --wlen                            Window length from 5' end to consider for damage estimation. Default: ${params.wlen}
-      --mindamage                       Mimimum amount of CtoT damage on the 5' end of the read. Default: ${params.mindamage}      
+      --coverage                        Minimum depth coverage to consider contig. Default: ${params.coverage}
+      --wlen                            Window length from 5' end of reads to consider for damage estimation. Default: ${params.wlen}
+      --mindamage                       Minimum amount of CtoT damage on the first base of the 5' end of the read. Default: ${params.mindamage}      
 
     Options:
       --results                         The output directory where the results will be saved. Default: ${params.outdir}
