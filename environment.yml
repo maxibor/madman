@@ -30,4 +30,4 @@ dependencies:
   - pymdown-extensions=7.1
   - pygments=2.6.1
   - pip:
-    - git+https://git@github.com/maxibor/pydamage.git
+    - pydamage==0.30
