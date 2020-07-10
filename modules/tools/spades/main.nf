@@ -2,7 +2,6 @@ process metaspades {
     tag "$name"
 
     label 'process_very_bigmem'
-    label 'process_mandatory'
 
     publishDir "${params.outdir}/assembly/metaspades/${name}", mode: 'copy'
 
@@ -29,8 +28,7 @@ process biospades {
     tag "$name"
 
     label 'process_very_bigmem'
-    label 'process_mandatory'
-
+    
     publishDir "${params.outdir}/assembly/biospades/${name}", mode: 'copy'
 
     input:
