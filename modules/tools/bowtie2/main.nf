@@ -15,12 +15,12 @@ process align_reads_to_contigs {
         if (!params.single_end) {
             """
             bowtie2-build --threads ${task.cpus} $contigs $name
-            bowtie2 -x $name -1 ${reads[0]} -2 ${reads[1]} --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
+            bowtie2 -x $name -1 ${reads[0]} -2 ${reads[1]} --very-sensitive -N 1 --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
             """
         } else {
             """
             bowtie2-build --threads ${task.cpus} $contigs $name
-            bowtie2 -x $name -U $reads --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
+            bowtie2 -x $name -U $reads --very-sensitive -N 1 --threads ${task.cpus} | samtools view -S -b -F 4 - | samtools sort - > $outfile
             """
         }
 }
