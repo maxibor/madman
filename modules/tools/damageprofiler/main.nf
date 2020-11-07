@@ -11,11 +11,13 @@ process damageprofiler {
         val(step)
     output:
         path("*.dmgprof_${step}.json")
+        file("*.pdf")
     script:
         outfile = name+".dmgprof_${step}.json"
+        ref = ${contig.baseName()}
         maxmem = task.memory.toGiga()
         """
-        damageprofiler -Xmx${maxmem}g -i $bam -r $contig -o tmp
+        damageprofiler -Xmx${maxmem}g -i $bam -r $contig -s ${ref} -o tmp
         mv tmp/${name}.sorted/dmgprof.json $outfile
         """
 }
