@@ -15,9 +15,16 @@ def _get_args():
     parser.add_argument(
         '-d',
         dest='damage',
-        default=0.2,
+        default=0.01,
         type=float,
-        help="Mimimum amount of CtoT damage on the 5' end of the read. Default=0.2"
+        help="Mimimum amount of CtoT damage on the 5' end of the read. Default=0.01"
+    )
+    parser.add_argument(
+        '--acc',
+        dest='accuracy',
+        default=0.9,
+        type=float,
+        help="Mimimum prediction accuracy. Default=0.9"
     )
     parser.add_argument(
         '-a',
@@ -39,9 +46,10 @@ def _get_args():
     pydamage = args.pydamage
     alpha = args.alpha
     mindamage = args.damage
+    accuracy = args.accuracy
     outfile = args.output
 
-    return(contigs, pydamage, alpha, mindamage, outfile)
+    return(contigs, pydamage, alpha, mindamage, accuracy, outfile)
 
 
 def get_basename(file_name):
@@ -87,7 +95,7 @@ def write_fasta(fasta_dict, outfile):
             fw.write("\n")
 
 
-def get_ancient_contigs(pydamage_report, alpha=0.05, mindamage=0.2):
+def get_ancient_contigs(pydamage_report, alpha=0.05, mindamage=0.01, accuracy=0.9):
     """Get name of contigs passing Q-value for ancient damage
 
     Args:
@@ -98,7 +106,7 @@ def get_ancient_contigs(pydamage_report, alpha=0.05, mindamage=0.2):
     """
 
     d = pd.read_csv(pydamage_report, index_col='reference')
-    return(list(d.query(f"qvalue <= {alpha} and damage_model_pmax >= {mindamage}").index))
+    return(list(d.query(f"qvalue <= {alpha} and damage_model_pmax >= {mindamage} and pred_accuracy >= {accuracy}").index))
 
 
 def filter_contigs(all_contigs, ancient_contigs):
@@ -119,13 +127,14 @@ def filter_contigs(all_contigs, ancient_contigs):
 
 
 if __name__ == "__main__":
-    CONTIGS, PYDAMAGE, ALPHA, MINDAMAGE, OUTFILE = _get_args()
+    CONTIGS, PYDAMAGE, ALPHA, MINDAMAGE, ACCURACY, OUTFILE = _get_args()
+
+    basename = get_basename(PYDAMAGE)
 
     if not OUTFILE:
         OUTFILE = basename + ".filtered.fa"
 
-    basename = get_basename(PYDAMAGE)
     all_contigs = parse_fasta(CONTIGS)
-    ancient_contigs_names = get_ancient_contigs(PYDAMAGE, ALPHA, MINDAMAGE)
+    ancient_contigs_names = get_ancient_contigs(PYDAMAGE, ALPHA, MINDAMAGE, ACCURACY)
     ancient_contigs = filter_contigs(all_contigs, ancient_contigs_names)
     write_fasta(ancient_contigs, OUTFILE)

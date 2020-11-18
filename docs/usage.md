@@ -21,9 +21,6 @@
     * [`--biospades`](#--biospades)
     * [`--minlen`](#--minlen)
     * [`--wlen`](#--wlen)
-    * [`--minread`](#--minread)
-    * [`--coverage`](#--coverage)
-    * [`--mindamage`](#--mindamage)
     * [`--pydamage_plot`](#--pydamage_plot)
   * [Job resources](#job-resources)
     * [Automatic resubmission](#automatic-resubmission)
@@ -214,20 +211,6 @@ Minimum length of contig to be kept. Default: `500`
 ### `--wlen`
 
 Window length from 5' end to consider for damage estimation. Default: `20`
-
-### `--minread`
-
-Minimum number of reads aligned back to a contig to be kept. Default: `150`
-
-### `--coverage`
-
-Minimum coverage to consider contig. Default: `0.5`
-
-> **pydamage logic: `n_reads >=minread OR cov >= coverage`**
-
-### `--mindamage`
-
-Mimimum amount of C to T damage on the 5' end of the aligned reads to keep the contig. Default=`0.2`
 
 ### `--pydamage_plot`
 

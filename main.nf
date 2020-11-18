@@ -35,8 +35,6 @@ def helpMessage() {
       --metaspades                      Specify to run metaSPAdes. Default: ${params.metaspades}
       --biospades                       Specify to run BiosyntheticSPAdes. Default: ${params.biospades}
       --minlen                          Minimum contig length (bp) to retain. Default:  ${params.minlen}
-      --minread                         Minimum number of reads aligned to contig to consider contig. Default: ${params.minread}
-      --coverage                        Minimum depth coverage to consider contig. Default: ${params.coverage}
       --wlen                            Window length from 5' end of reads to consider for damage estimation. Default: ${params.wlen}
       --mindamage                       Minimum amount of CtoT damage on the first base of the 5' end of the read. Default: ${params.mindamage}      
 
@@ -86,8 +84,6 @@ summary['Run MetaSpades'] = params.metaspades
 summary['Run Biosynthetic Spades'] = params.biospades
 summary['Make Pydamage plots'] = params.pydamage_plot
 summary['Min len'] = params.minlen
-summary['Min nb read'] = params.minread
-summary['Min cov'] = params.coverage
 summary['Pydamage window'] = params.wlen
 summary['Min damage'] = params.mindamage
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"

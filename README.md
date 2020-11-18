@@ -111,8 +111,6 @@ Settings:
   --metaspades                      Specify to run metaSPAdes. Default: false
   --biospades                       Specify to run BiosyntheticSPAdes. Default: false
   --minlen                          Minimum contig length (bp) to retain. Default:  300
-  --minread                         Minimum number of reads aligned to contig to consider contig. Default: 1000
-  --coverage                        Minimum depth coverage to consider contig. Default: 0.5
   --wlen                            Window length from 5' end of reads to consider for damage estimation. Default: 35
   --mindamage                       Minimum frequency of C to T damage on the first base of the 5' end of the read. Default: 0.2
 
