@@ -15,8 +15,8 @@ process filter_contigs_damage {
         outfile = name + ".ancient_filtered.fa"
         ancient_contigs = name+"_ancient_contigs.txt"
         """
-        filter_contigs_damage.py -d ${params.mindamage} -o $outfile $contigs $pydamage_csv
-        awk -F "," '{if ((\$11 <= 0.05) && (\$8 >= ${params.mindamage})) { print \$1 }}' $pydamage_csv > $ancient_contigs
+        filter_contigs_damage.py -d ${params.mindamage} --acc ${params.minaccuracy} -o $outfile $contigs $pydamage_csv
+        awk -F "," '{if ((\$11 <= 0.05) && (\$8 >= ${params.mindamage}) && (\$1 >= ${params.minaccuracy})) { print \$1 }}' $pydamage_csv > $ancient_contigs
         """
 }
 

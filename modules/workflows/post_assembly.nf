@@ -7,6 +7,7 @@ include {metaspades; biospades} from "$baseDir/modules/tools/spades/main.nf" par
 include prokka from "$baseDir/modules/tools/prokka/main.nf" params(params)
 include pydamage from "$baseDir/modules/tools/pydamage/main.nf" params(params)
 include {quast as quast_pre ; quast as quast_post} from "$baseDir/modules/tools/quast/main.nf" params(params)
+include consensus_calling from "$baseDir/modules/tools/samtools/main.nf" params(params)
 
 workflow POST_ASSEMBLY_MODERN {
     take:
@@ -25,7 +26,8 @@ workflow POST_ASSEMBLY_MODERN {
         quast_pre(contigs, "pre")
         filter_contigs_length(contigs)
         align_reads_to_contigs(filter_contigs_length.out.join(trimmed_reads))
-        prokka(filter_contigs_length.out)
+        consensus_calling(filter_contigs_length.out.join(align_reads_to_contigs.out))
+        prokka(consensus_calling.out)
 
     emit:
         quast_pre = quast_pre.out
@@ -50,9 +52,10 @@ workflow POST_ASSEMBLY_ANCIENT {
         quast_pre(contigs, "pre")
         filter_contigs_length(contigs)
         align_reads_to_contigs(filter_contigs_length.out.join(trimmed_reads))
-        damageprofiler_pre(contigs.join(align_reads_to_contigs.out), "pre")
+        consensus_calling(filter_contigs_length.out.join(align_reads_to_contigs.out))
+        damageprofiler_pre(consensus_calling.out.join(align_reads_to_contigs.out), "pre")
         pydamage(align_reads_to_contigs.out)
-        filter_contigs_damage(pydamage.out.csv.join(contigs))
+        filter_contigs_damage(pydamage.out.csv.join(consensus_calling.out))
         quast_post(filter_contigs_damage.out.fasta, "post")
         damageprofiler_post(filter_contigs_damage.out.fasta.join(align_reads_to_contigs.out),"post")
         prokka(filter_contigs_damage.out.fasta)

@@ -1,28 +1,40 @@
-name: nf-core-madman-1.0dev
+name: nf-core-madman-1.1dev
 channels:
-  - conda-forge
   - bioconda
-  - maxibor
+  - conda-forge
   - defaults
 dependencies:
-  - adapterremoval=2.3.1
-  - fastqc=0.11.9
+  - adapterremoval=2.3.2
+  - bcftools=1.12
+  - bowtie2=2.4.4
+  - damageprofiler=1.1
   - fastp=0.20.1
-  - samtools=1.10
-  - pmdtools=0.60
-  - damageprofiler=0.4.9
-  - bowtie2=2.3.5.1
+  - fastqc=0.11.9
+  - graphviz=2.47.3
+  - markdown=3.3.4
   - megahit=1.2.9
-  - spades=3.14.0
-  - quast=5.0.2
+  - multiqc=1.10.1
+  - numpy=1.21.0
+  - pandas=1.2.5
+  - pip=21.1.3
+  - pmdtools=0.60
+  - prodigal=2.6.3
   - prokka=1.14.6
-  - multiqc=1.9
-  - pandas=1.1.4
-  - pip=20.1.1
-  - python=3.6.10
-  - markdown=3.2.2
-  - pymdown-extensions=7.1
-  - pygments=2.6.1
-  - tqdm
+  - python=3.7.10
+  - quast=5.0.2
+  - rich=10.4.0
+  - samtools=1.12
+  - spades=3.15.2
+  - spectra=0.0.11
+  - tqdm=4.61.1
+  - pymdown-extensions=8.2
   - pip:
+    - biopython==1.79
+    - kneed==0.7.0
+    - patsy==0.5.1
+    - py4j==0.10.9.2
     - git+https://git@github.com/maxibor/pydamage.git@dev
+    - pypmml==0.9.11
+    - pysam==0.16.0.1
+    - scipy==1.7.0
+    - statsmodels==0.12.2

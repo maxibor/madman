@@ -20,7 +20,7 @@ process pydamage {
         }
         """
         samtools index $bam
-        pydamage --force -p ${task.cpus} -w ${params.wlen} $plot -o $output $bam
+        pydamage -o $output analyze --force -p ${task.cpus} -w ${params.wlen} $plot $bam
         mv ${name}/pydamage_results.csv ${name}.pydamage_results.csv
         """
 }

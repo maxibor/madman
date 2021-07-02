@@ -6,39 +6,40 @@ import pandas as pd
 
 
 def _get_args():
-    '''This function parses and return arguments passed in'''
+    """This function parses and return arguments passed in"""
     parser = argparse.ArgumentParser(
-        prog='fasta_filter_length',
-        description='filterFastaByLength')
-    parser.add_argument('fasta', help="path to input fasta contig file")
-    parser.add_argument('pydamage', help="path to input pydamage csv file")
+        prog="fasta_filter_length", description="filterFastaByLength"
+    )
+    parser.add_argument("fasta", help="path to input fasta contig file")
+    parser.add_argument("pydamage", help="path to input pydamage csv file")
     parser.add_argument(
-        '-d',
-        dest='damage',
+        "-d",
+        dest="damage",
         default=0.01,
         type=float,
-        help="Mimimum amount of CtoT damage on the 5' end of the read. Default=0.01"
+        help="Mimimum amount of CtoT damage on the 5' end of the read. Default=0.01",
     )
     parser.add_argument(
-        '--acc',
-        dest='accuracy',
+        "--acc",
+        dest="accuracy",
         default=0.9,
         type=float,
-        help="Mimimum prediction accuracy. Default=0.9"
+        help="Mimimum prediction accuracy. Default=0.9",
     )
     parser.add_argument(
-        '-a',
-        dest='alpha',
+        "-a",
+        dest="alpha",
         default=0.05,
         type=float,
-        help='alpha threshold. Default=0.05'
+        help="alpha threshold. Default=0.05",
     )
     parser.add_argument(
-        '-o',
+        "-o",
         dest="output",
         default=None,
         type=str,
-        help="Output file basename. Default = {basename}.filtered.fa")
+        help="Output file basename. Default = {basename}.filtered.fa",
+    )
 
     args = parser.parse_args()
 
@@ -49,7 +50,7 @@ def _get_args():
     accuracy = args.accuracy
     outfile = args.output
 
-    return(contigs, pydamage, alpha, mindamage, accuracy, outfile)
+    return (contigs, pydamage, alpha, mindamage, accuracy, outfile)
 
 
 def get_basename(file_name):
@@ -57,7 +58,7 @@ def get_basename(file_name):
         basename = file_name.split("/")[-1].split(".")[0]
     else:
         basename = file_name.split(".")[0]
-    return(basename)
+    return basename
 
 
 def parse_fasta(fasta_file):
@@ -78,7 +79,7 @@ def parse_fasta(fasta_file):
                 fastadict[seqname] = []
             else:
                 fastadict[seqname].append(line)
-    return(fastadict)
+    return fastadict
 
 
 def write_fasta(fasta_dict, outfile):
@@ -105,8 +106,12 @@ def get_ancient_contigs(pydamage_report, alpha=0.05, mindamage=0.01, accuracy=0.
         (list): list of contigs name passing threshold
     """
 
-    d = pd.read_csv(pydamage_report, index_col='reference')
-    return(list(d.query(f"qvalue <= {alpha} and damage_model_pmax >= {mindamage} and pred_accuracy >= {accuracy}").index))
+    d = pd.read_csv(pydamage_report, index_col="reference")
+    return list(
+        d.query(
+            f"qvalue <= {alpha} and damage_model_pmax >= {mindamage} and predicted_accuracy >= {accuracy}"
+        ).index
+    )
 
 
 def filter_contigs(all_contigs, ancient_contigs):
@@ -123,7 +128,7 @@ def filter_contigs(all_contigs, ancient_contigs):
         cname = c.split()[0][1:]
         if cname in ancient_contigs:
             a_contigs[c] = all_contigs[c]
-    return(a_contigs)
+    return a_contigs
 
 
 if __name__ == "__main__":
