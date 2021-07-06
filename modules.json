@@ -1,0 +1,12 @@
+{
+    "name": "nf-core/madman",
+    "homePage": "https://github.com/nf-core/madman",
+    "modules": {
+        "fastqc": {
+            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
+        },
+        "multiqc": {
+            "git_sha": "95e02f913fa0917fafae00e96e631d5b25a965f3"
+        }
+    }
+}
