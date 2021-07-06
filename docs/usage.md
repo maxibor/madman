@@ -22,6 +22,8 @@
     * [`--minlen`](#--minlen)
     * [`--wlen`](#--wlen)
     * [`--pydamage_plot`](#--pydamage_plot)
+    * [`--minaccuracy`](#--minaccuracy)
+    * [`--min_variant_qual`](#--min_variant_qual)
   * [Job resources](#job-resources)
     * [Automatic resubmission](#automatic-resubmission)
     * [Custom resource requests](#custom-resource-requests)
@@ -218,6 +220,14 @@ Create pydamage plot.
 Without this flag (default), no pydamage plots are created
 
 > Creating the pydamage plots for each contig takes a lot of time !
+
+### `--minaccuracy`
+
+Minimum PyDamage predicted accuracy to keep contig
+
+### `--min_variant_qual`
+
+Minimum quality score to keep variant call
 
 ## Job resources
 

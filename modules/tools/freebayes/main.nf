@@ -1,4 +1,4 @@
-process consensus_calling {
+process freebayes_consensus_calling {
     tag "$name"
 
     label 'process_low'
@@ -12,8 +12,8 @@ process consensus_calling {
         path("*.fa")
     script:
         """
-        # call variants
-        bcftools mpileup -Ou -f $contigs $bam | bcftools call -M -c -Oz -o calls.vcf.gz
+        freebayes -j -f $contigs -p 1 $bam > calls.vcf
+        bcftools view -i '%QUAL>=${params.min_variant_qual}' -Oz -o calls.vcf.gz calls.vcf
         bcftools index calls.vcf.gz
 
         cat $contigs | bcftools consensus calls.vcf.gz > ${name}_consensus_recalled.fa
