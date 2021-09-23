@@ -4,6 +4,13 @@ process adapterremoval {
     label 'process_medium'
     label 'process_mandatory'
 
+    conda (params.enable_conda ? "bioconda::adapterremoval=2.3.2" : null)
+    if (workflow.containerEngine == 'singularity' && !params.singularity_pull_docker_container) {
+        container "https://depot.galaxyproject.org/singularity/adapterremoval:2.3.2--h33c0355_1"
+    } else {
+        container "quay.io/biocontainers/adapterremoval:2.3.2--h33c0355_1"
+    }
+
     input:
         tuple name, path(reads)
         path adapter_list
@@ -11,8 +18,10 @@ process adapterremoval {
     output:
         tuple val(name), path('*.trimmed.fastq'), emit: trimmed_reads
         path "*.settings", emit: settings
+        path "*.version.txt", emit: version
 
     script:
+        def software = getSoftwareName(task.process)
         out1 = name+".pair1.trimmed.fastq"
         out2 = name+".pair2.trimmed.fastq"
         se_out = name+".trimmed.fastq"
@@ -32,6 +41,7 @@ process adapterremoval {
                            --qualitybase ${params.phred} \
                            --adapter-list ${adapter_list} \
                            --settings $settings
+            AdapterRemoval --version 2>&1 | sed -e "s/AdapterRemoval ver. //g" > ${software}.version.txt
             """
         } else {
             """
@@ -46,6 +56,7 @@ process adapterremoval {
                            --qualitybase ${params.phred} \
                            --adapter-list ${adapter_list} \
                            --settings $settings
+            AdapterRemoval --version 2>&1 | sed -e "s/AdapterRemoval ver. //g" > ${software}.version.txt
             """
-        }    
+        }
 }

@@ -5,6 +5,13 @@ process metaspades {
 
     publishDir "${params.outdir}/assembly/metaspades/${name}", mode: 'copy'
 
+    conda (params.enable_conda ? "bioconda::spades=3.9.1" : null)
+    if (workflow.containerEngine == 'singularity' && !params.singularity_pull_docker_container) {
+        container "https://depot.galaxyproject.org/singularity/spades:3.9.1--h9ee0642_1"
+    } else {
+        container "quay.io/biocontainers/spades:3.9.1--h9ee0642_1"
+    }
+
     input:
         tuple val(name), path(reads)
     output:
@@ -30,6 +37,13 @@ process biospades {
     label 'process_very_bigmem'
     
     publishDir "${params.outdir}/assembly/biospades/${name}", mode: 'copy'
+
+    conda (params.enable_conda ? "bioconda::spades=3.9.1" : null)
+    if (workflow.containerEngine == 'singularity' && !params.singularity_pull_docker_container) {
+        container "https://depot.galaxyproject.org/singularity/spades:3.9.1--h9ee0642_1"
+    } else {
+        container "quay.io/biocontainers/spades:3.9.1--h9ee0642_1"
+    }
 
     input:
         tuple val(name), path(reads)

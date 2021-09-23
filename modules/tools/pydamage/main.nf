@@ -6,6 +6,13 @@ process pydamage {
 
     publishDir "${params.outdir}/pydamage/$name", mode: 'copy'
 
+    conda (params.enable_conda ? "bioconda::pydamage=0.60" : null)
+    if (workflow.containerEngine == 'singularity' && !params.singularity_pull_docker_container) {
+        container "https://depot.galaxyproject.org/singularity/pydamage:0.62--pyhdfd78af_0"
+    } else {
+        container "quay.io/biocontainers/pydamage:0.62--pyhdfd78af_0"
+    }
+
     input:
         tuple val(name), path(bam)
     output:

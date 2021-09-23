@@ -6,6 +6,14 @@ process filter_contigs_damage {
 
     publishDir "${params.outdir}/fasta_filter/${name}", mode: 'copy'
 
+    conda (params.enable_conda ? "conda-forge::pandas=1.1.5" : null)
+    if (workflow.containerEngine == 'singularity' && !params.singularity_pull_docker_container) {
+        container "https://depot.galaxyproject.org/singularity/pandas:1.1.5"
+    } else {
+        container "quay.io/biocontainers/pandas:1.1.5"
+    }
+
+
     input:
         tuple val(name), path(pydamage_csv), path(contigs)
     output:

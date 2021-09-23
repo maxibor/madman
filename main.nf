@@ -68,7 +68,6 @@ Channel
 multiqc_config = params.modern ? params.multiqc_config_modern : params.multiqc_config_ancient
 ch_multiqc_config = file(multiqc_config, checkIfExists: true)
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
-ch_adapter_list = file(params.adapter_list, checkIfExists: true)
 
 runName = workflow.runName
 
@@ -129,10 +128,10 @@ Channel.from(summary.collect{ [it.key, it.value] })
     """.stripIndent() }
     .set { ch_workflow_summary }
 
-include megahit from "$baseDir/modules/tools/megahit/main.nf" params(params)
-include {metaspades ; biospades} from "$baseDir/modules/tools/spades/main.nf" params(params)
-include multiqc from "$baseDir/modules/tools/multiqc/main.nf" params(params)
-include PRE_ASSEMBLY from "$baseDir/modules/workflows/pre_assembly.nf" params(params)
+include { megahit } from "$baseDir/modules/tools/megahit/main.nf" params(params)
+include { metaspades ; biospades } from "$baseDir/modules/tools/spades/main.nf" params(params)
+include { multiqc } from "$baseDir/modules/tools/multiqc/main.nf" params(params)
+include { PRE_ASSEMBLY } from "$baseDir/modules/workflows/pre_assembly.nf" params(params)
 if (params.modern){
     include {POST_ASSEMBLY_MODERN as POST_ASSEMBLY_MEGAHIT ; 
              POST_ASSEMBLY_MODERN as POST_ASSEMBLY_BIOSPADES; 
@@ -204,7 +203,6 @@ workflow {
             runName,
             ch_workflow_summary)
 
-    output_documentation(ch_output_docs)
 }
 
 /*

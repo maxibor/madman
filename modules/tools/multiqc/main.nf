@@ -6,6 +6,13 @@ process multiqc {
 
     publishDir "${params.outdir}", mode: 'copy'
 
+    conda (params.enable_conda ? "bioconda::multiqc=1.9" : null)
+    if (workflow.containerEngine == 'singularity' && !params.singularity_pull_docker_container) {
+        container "https://depot.galaxyproject.org/singularity/multiqc:1.9--pyh9f0ad1d_0"
+    } else {
+        container "quay.io/biocontainers/multiqc:1.9--pyh9f0ad1d_0"
+    }
+
     input:
         path('adapterRemoval/*')
         path('fastqc/*')

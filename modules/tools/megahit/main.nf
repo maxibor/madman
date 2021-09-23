@@ -6,6 +6,14 @@ process megahit {
 
     publishDir "${params.outdir}/assembly/megahit/${name}", mode: 'copy'
 
+    conda (params.enable_conda ? "bioconda::megahit=1.2.9" : null)
+    if (workflow.containerEngine == 'singularity' && !params.singularity_pull_docker_container) {
+        container "https://depot.galaxyproject.org/singularity/megahit:1.2.9--h8b12597_0"
+    } else {
+        container "quay.io/biocontainers/megahit:1.2.9--h8b12597_0"
+    }
+
+
     input:
         tuple val(name), path(reads)
 
