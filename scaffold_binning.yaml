@@ -1,0 +1,20 @@
+name: MAGbinning
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - bgzip
+  - pandas
+  - pyfastx
+  - pysam
+  - bioawk
+  - samtools
+  - metabat2
+  - maxbin2
+  - das_tool
+  - checkm-genome
+  - cmseq
+  - prokka>=1.14
+  - gunc
