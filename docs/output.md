@@ -1,73 +1,68 @@
 # nf-core/madman: Output
 
+## Introduction
+
 This document describes the output produced by the pipeline. Most of the plots are taken from the MultiQC report, which summarises results at the end of the pipeline.
 
-* [nf-core/madman: Output](#nf-coremadman-output)
-  * [**Output directory: `results/fastqc`**](#output-directory-resultsfastqc)
-  * [**Output directory: `results/multiqc`**](#output-directory-resultsmultiqc)
-  * [**Output directory: `assembly`**](#output-directory-assembly)
-  * [**Output directory: `alignment`**](#output-directory-alignment)
-  * [**Output directory: `fasta_filter`**](#output-directory-fastafilter)
-  * [**Output directory: `pydamage`**](#output-directory-pydamage)
-  * [**Output directory: `quast`**](#output-directory-quast)
-  * [**Output directory: `prokka`**](#output-directory-prokka)
+The directories listed below will be created in the results directory after the pipeline has finished. All paths are relative to the top-level results directory.
 
-## **Output directory: `results/fastqc`**
+<!-- TODO nf-core: Write this documentation describing your workflow's output -->
 
-[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your reads. It provides information about the quality score distribution across your reads, the per base sequence content (%T/A/G/C). You get information about adapter contamination and other overrepresented sequences.
+## Pipeline overview
 
-For further reading and documentation see the [FastQC help](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
+The pipeline is built using [Nextflow](https://www.nextflow.io/) and processes data using the following steps:
 
-> **NB:** The FastQC plots displayed in the MultiQC report shows _untrimmed_ reads. They may contain adapter sequence and potentially regions with low quality. To see how your reads look after trimming, look at the FastQC reports in the `trim_galore` directory.
+* [FastQC](#fastqc) - Raw read QC
+* [MultiQC](#multiqc) - Aggregate report describing results and QC from the whole pipeline
+* [Pipeline information](#pipeline-information) - Report metrics generated during the workflow execution
 
-* `sample_fastqc.html`
-  * FastQC report, containing quality metrics for your untrimmed raw fastq files
-* `zips/sample_fastqc.zip`
-  * zip file containing the FastQC report, tab-delimited data file and plot images
+### FastQC
 
-## **Output directory: `results/multiqc`**
+<details markdown="1">
+<summary>Output files</summary>
 
-[MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
+* `fastqc/`
+    * `*_fastqc.html`: FastQC report containing quality metrics.
+    * `*_fastqc.zip`: Zip archive containing the FastQC report, tab-delimited data file and plot images.
 
-The pipeline has special steps which allow the software versions used to be reported in the MultiQC output for future traceability.
+</details>
 
-* `Project_multiqc_report.html`
-  * MultiQC report - a standalone HTML file that can be viewed in your web browser
-* `Project_multiqc_data/`
-  * Directory containing parsed statistics from the different tools used in the pipeline
+[FastQC](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/) gives general quality metrics about your sequenced reads. It provides information about the quality score distribution across your reads, per base sequence content (%A/T/G/C), adapter contamination and overrepresented sequences. For further reading and documentation see the [FastQC help pages](http://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/).
 
-For more information about how to use MultiQC reports, see [http://multiqc.info](http://multiqc.info)
+![MultiQC - FastQC sequence counts plot](images/mqc_fastqc_counts.png)
 
-## **Output directory: `assembly`**
+![MultiQC - FastQC mean quality scores plot](images/mqc_fastqc_quality.png)
 
-Contains the output of de novo assembler:
+![MultiQC - FastQC adapter content plot](images/mqc_fastqc_adapter.png)
 
-* contigs (in FASTA format)
-* logfile
+> **NB:** The FastQC plots displayed in the MultiQC report shows _untrimmed_ reads. They may contain adapter sequence and potentially regions with low quality.
 
-## **Output directory: `alignment`**
+### MultiQC
 
-Contains BAM files of the reads aligned back to the contigs
+<details markdown="1">
+<summary>Output files</summary>
 
-## **Output directory: `fasta_filter`**
+* `multiqc/`
+    * `multiqc_report.html`: a standalone HTML file that can be viewed in your web browser.
+    * `multiqc_data/`: directory containing parsed statistics from the different tools used in the pipeline.
+    * `multiqc_plots/`: directory containing static images from the report in various formats.
 
-Contains the filtered contigs:
+</details>
 
-* by size: `*.size_filtered.fa`
-* by damage (pydamage) and size `*.ancient_filtered.fa`
+[MultiQC](http://multiqc.info) is a visualization tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in the report data directory.
 
-## **Output directory: `pydamage`**
+Results generated by MultiQC collate pipeline QC from supported tools e.g. FastQC. The pipeline has special steps which also allow the software versions to be reported in the MultiQC output for future traceability. For more information about how to use MultiQC reports, see <http://multiqc.info>.
 
-Contains the [pydamage](https://github.com/maxibor/pydamage) ancient DNA estimation report file
+### Pipeline information
 
-## **Output directory: `quast`**
+<details markdown="1">
+<summary>Output files</summary>
 
-Contains the [Quast](https://github.com/ablab/quast) assembly statistics report files.
+* `pipeline_info/`
+    * Reports generated by Nextflow: `execution_report.html`, `execution_timeline.html`, `execution_trace.txt` and `pipeline_dag.dot`/`pipeline_dag.svg`.
+    * Reports generated by the pipeline: `pipeline_report.html`, `pipeline_report.txt` and `software_versions.tsv`.
+    * Reformatted samplesheet files used as input to the pipeline: `samplesheet.valid.csv`.
 
-This can help you assess the quality of the assemblies (contig lengths, N50s, chimeric contigs etc.).
+</details>
 
-## **Output directory: `prokka`**
-
-Contains the [prokka](https://github.com/tseemann/prokka) annotation report files.
-
-This allows assessment of assembly completeness, such as defined in with the [MIMAG criteria](https://doi.org/10.1038/nbt.3893)
+[Nextflow](https://www.nextflow.io/docs/latest/tracing.html) provides excellent functionality for generating various reports relevant to the running and execution of the pipeline. This will allow you to troubleshoot errors with the running of the pipeline, and also provide you with other information such as launch commands, run times and resource usage.
