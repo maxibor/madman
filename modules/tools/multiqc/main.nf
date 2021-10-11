@@ -1,3 +1,5 @@
+include { getSoftwareName } from "$baseDir/modules/tools/nf_core_utils/main.nf"
+
 process multiqc {
     tag "$custom_runName"
 
@@ -25,11 +27,14 @@ process multiqc {
         path('software_versions/*')
         path(multiqc_conf)
         val(custom_runName)
-        file workflow_summary name "workflow_summary_mqc.yaml"
+        path(workflow_summary) name "workflow_summary_mqc.yaml"
     output:
         path('*multiqc_report.html')
+        path  "*.version.txt", emit: version
     script:
+        def software = getSoftwareName(task.process)
         """
         multiqc -f -c $multiqc_conf --title $custom_runName ./
+        multiqc --version | sed -e "s/multiqc, version //g" > ${software}.version.txt
         """
 }

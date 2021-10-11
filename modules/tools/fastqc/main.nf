@@ -1,3 +1,5 @@
+include { getSoftwareName } from "$baseDir/modules/tools/nf_core_utils/main.nf"
+
 process fastqc {
     tag "$name"
 
@@ -14,9 +16,12 @@ process fastqc {
     input:
         tuple val(name), path(reads)
     output:
-        path '*_fastqc.{zip,html}'
+        path '*_fastqc.{zip,html}', emit: logs
+        path  "*.version.txt", emit: version
     script:
+        def software = getSoftwareName(task.process)
         """
         fastqc -t ${task.cpus} -q $reads
+        fastqc --version | sed -e "s/FastQC v//g"  > ${software}.version.txt
         """
 }

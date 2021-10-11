@@ -1,3 +1,5 @@
+include { getSoftwareName } from "$baseDir/modules/tools/nf_core_utils/main.nf"
+
 process prokka {
     tag "$name"
 
@@ -16,9 +18,12 @@ process prokka {
     input:
         tuple val(name), path(contigs)
     output:
-        path("${name}")
+        path("${name}"), emit: result
+        path  "*.version.txt", emit: version
     script:
+        def software = getSoftwareName(task.process)
         """
         prokka --metagenome --cpus ${task.cpus} --outdir $name --prefix $name $contigs
+        echo \$(prokka --version 2>&1) | sed 's/^.*prokka //' > ${software}.version.txt
         """
 }

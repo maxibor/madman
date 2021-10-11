@@ -29,25 +29,21 @@ process get_software_versions {
     } else {
         container "quay.io/biocontainers/python:3.8.3"
     }
+    input:
+    path versions
 
     output:
+    path "software_versions.tsv"     , emit: tsv
     path 'software_versions_mqc.yaml', emit: yaml
-    path "software_versions.csv", emit: csv
 
-    script:
+    script: // This script is bundled with the pipeline, in nf-core/madman/bin/
     """
-    echo $workflow.manifest.version > v_pipeline.txt
-    echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
-    multiqc --version > v_multiqc.txt
-    AdapterRemoval --version  &> v_adapterremoval.txt 2>&1 || true
-    fastp --version &> v_fastp.txt 2>&1 || true 
-    megahit --version > v_megahit.txt
-    spades.py --version > v_spades.txt
-    quast --version > v_quast.txt
-    pydamage --version > v_pydamage.txt
-    damageprofiler --version > v_damageprofiler.txt
-    prokka --version &> v_prokka.txt 2>&1 || true
+    echo $workflow.manifest.version > pipeline.version.txt
+    echo $workflow.nextflow.version > nextflow.version.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
+}
+
+def getSoftwareName(task_process) {
+    return task_process.tokenize(':')[-1].tokenize('_')[0].toLowerCase()
 }

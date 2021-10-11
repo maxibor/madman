@@ -10,7 +10,7 @@
 */
 
 
-nextflow.preview.dsl = 2
+nextflow.enable.dsl=2
 
 def helpMessage() {
     log.info nfcoreHeader()
@@ -36,7 +36,8 @@ def helpMessage() {
       --biospades                       Specify to run BiosyntheticSPAdes. Default: ${params.biospades}
       --minlen                          Minimum contig length (bp) to retain. Default:  ${params.minlen}
       --wlen                            Window length from 5' end of reads to consider for damage estimation. Default: ${params.wlen}
-      --mindamage                       Minimum amount of CtoT damage on the first base of the 5' end of the read. Default: ${params.mindamage}      
+      --mindamage                       Minimum amount of CtoT damage on the first base of the 5' end of the read. Default: ${params.mindamage}   
+      --min_variant_qual                Minimum variant calling quality to retain variant. Default: ${params.min_variant_qual}
 
     Options:
       --results                         The output directory where the results will be saved. Default: ${params.outdir}
@@ -68,6 +69,7 @@ Channel
 multiqc_config = params.modern ? params.multiqc_config_modern : params.multiqc_config_ancient
 ch_multiqc_config = file(multiqc_config, checkIfExists: true)
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
+ch_adapter_list = file(params.adapter_list, checkIfExists: true)
 
 runName = workflow.runName
 
@@ -146,13 +148,15 @@ if (params.modern){
 include {output_documentation ; get_software_versions} from "$baseDir/modules/tools/nf_core_utils/main.nf" params(params)
 
 workflow {
-    get_software_versions()
-    PRE_ASSEMBLY(ch_reads, ch_adapter_list)
     quast_pre_ch = Channel.empty()
     quast_post_ch = Channel.empty()
     damageprofiler_pre_ch = Channel.empty()
     damageprofiler_post_ch = Channel.empty()
     prokka_ch = Channel.empty()
+
+    PRE_ASSEMBLY(ch_reads, ch_adapter_list)
+
+    Channel.from(PRE_ASSEMBLY.out.versions).set {versions_ch}
 
     if (params.megahit) {
         megahit(PRE_ASSEMBLY.out.trimmed_reads)
@@ -163,6 +167,7 @@ workflow {
             damageprofiler_pre_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_pre).set{damageprofiler_pre_ch}
             damageprofiler_post_ch.mix(POST_ASSEMBLY_MEGAHIT.out.damageprofiler_post).set{damageprofiler_post_ch}
         }
+        versions_ch.mix(megahit.out.version, POST_ASSEMBLY_MEGAHIT.out.versions)
         prokka_ch.mix(POST_ASSEMBLY_MEGAHIT.out.prokka).set{prokka_ch}
     }
 
@@ -175,6 +180,7 @@ workflow {
             damageprofiler_pre_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
             damageprofiler_post_ch.mix(POST_ASSEMBLY_BIOSPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
         }
+        versions_ch.mix(biospades.out.version, POST_ASSEMBLY_BIOSPADES.out.versions)
         prokka_ch.mix(POST_ASSEMBLY_BIOSPADES.out.prokka).set{prokka_ch}
     } 
 
@@ -187,12 +193,16 @@ workflow {
             damageprofiler_pre_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_pre).set{damageprofiler_pre_ch}
             damageprofiler_post_ch.mix(POST_ASSEMBLY_METASPADES.out.damageprofiler_post).set{damageprofiler_post_ch}
         }
+        versions_ch.mix(metaspades.out.version, POST_ASSEMBLY_METASPADES.out.versions)
         prokka_ch.mix(POST_ASSEMBLY_METASPADES.out.prokka).set{prokka_ch}
     }
+
+    get_software_versions(versions_ch.collect())
+
     
-    multiqc(PRE_ASSEMBLY.out.adapater_removal_logs.collect().ifEmpty([]), 
-            PRE_ASSEMBLY.out.fastqc_logs.collect().ifEmpty([]), 
-            PRE_ASSEMBLY.out.fastp_logs.collect().ifEmpty([]),
+    multiqc(PRE_ASSEMBLY.out.adapater_removal_logs.collect(), 
+            PRE_ASSEMBLY.out.fastqc_logs.collect(), 
+            PRE_ASSEMBLY.out.fastp_logs.collect(),
             quast_pre_ch.collect().ifEmpty([]),
             quast_post_ch.collect().ifEmpty([]),
             damageprofiler_pre_ch.collect().ifEmpty([]),

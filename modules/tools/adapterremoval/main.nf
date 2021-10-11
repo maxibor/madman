@@ -1,3 +1,5 @@
+include { getSoftwareName } from "$baseDir/modules/tools/nf_core_utils/main.nf"
+
 process adapterremoval {
     tag "$name"
 
@@ -12,8 +14,8 @@ process adapterremoval {
     }
 
     input:
-        tuple name, path(reads)
-        path adapter_list
+        tuple val(name), path(reads)
+        path (adapter_list)
 
     output:
         tuple val(name), path('*.trimmed.fastq'), emit: trimmed_reads

@@ -1,3 +1,5 @@
+include { getSoftwareName } from "$baseDir/modules/tools/nf_core_utils/main.nf"
+
 process metaspades {
     tag "$name"
 
@@ -17,8 +19,10 @@ process metaspades {
     output:
         tuple val(name), path("*_metaspades.contigs.fa"), emit: contigs
         tuple val(name), path("${name}/*"), emit: metaspades_logs
+        path  "*.version.txt", emit: version
     script:
         mem = task.memory.toGiga()
+        def software = getSoftwareName(task.process)
         """
         spades.py --meta \
                   -1 ${reads[0]} \
@@ -28,6 +32,7 @@ process metaspades {
                   --phred-offset ${params.phred} \
                   -o $name
         cp $name/contigs.fasta ${name}_metaspades.contigs.fa
+        echo \$(spades.py --version 2>&1) | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//' > ${software}.version.txt
         """ 
 }
 
@@ -50,8 +55,10 @@ process biospades {
     output:
         tuple val(name), path("*_biospades.contigs.fa"), emit: contigs
         tuple val(name), path("${name}/*"), emit: biospades_logs
+        path  "*.version.txt", emit: version
     script:
         mem = task.memory.toGiga()
+        def software = getSoftwareName(task.process)
         """
         spades.py --meta \
                   --bio \
@@ -62,5 +69,6 @@ process biospades {
                   --phred-offset ${params.phred} \
                   -o $name
         cp $name/gene_clusters.fasta ${name}_biospades.contigs.fa
+        echo \$(spades.py --version 2>&1) | sed 's/^.*SPAdes genome assembler v//; s/ .*\$//' > ${software}.version.txt
         """ 
 }

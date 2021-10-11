@@ -1,3 +1,5 @@
+include { getSoftwareName } from "$baseDir/modules/tools/nf_core_utils/main.nf"
+
 process quast {
     tag "$name"
 
@@ -17,10 +19,13 @@ process quast {
         tuple val(name), path(contigs)
         val(step)
     output:
-        path("*_quast_${step}")
+        path("*_quast_${step}"), emit: result
+        path  "*.version.txt", emit: version
     script:
         outdir = name+"_quast_${step}"
+        def software = getSoftwareName(task.process)
         """
         quast -o $outdir -t ${task.cpus} $contigs
+        echo \$(quast --version 2>&1) | sed 's/^.*QUAST v//; s/ .*\$//' > ${software}.version.txt
         """
 }

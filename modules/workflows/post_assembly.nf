@@ -7,9 +7,11 @@ include  {metaspades; biospades } from "$baseDir/modules/tools/spades/main.nf" p
 include { prokka } from "$baseDir/modules/tools/prokka/main.nf" params(params)
 include { pydamage } from "$baseDir/modules/tools/pydamage/main.nf" params(params)
 include { quast as quast_pre ; quast as quast_post } from "$baseDir/modules/tools/quast/main.nf" params(params)
-include { freebayes_consensus_calling } from "$baseDir/modules/tools/freebayes/main.nf" params(params)
+include { freebayes } from "$baseDir/modules/tools/freebayes/main.nf" params(params)
+include { bcftools } from "$baseDir/modules/tools/bcftools/main.nf" params(params)
 
 workflow POST_ASSEMBLY_MODERN {
+    versions = Channel.empty()
     take:
         contigs
         trimmed_reads
@@ -26,16 +28,21 @@ workflow POST_ASSEMBLY_MODERN {
         quast_pre(contigs, "pre")
         filter_contigs_length(contigs)
         align_reads_to_contigs(filter_contigs_length.out.join(trimmed_reads))
-        freebayes_consensus_calling(filter_contigs_length.out.join(align_reads_to_contigs.out))
-        prokka(freebayes_consensus_calling.out)
+        freebayes(filter_contigs_length.out.join(align_reads_to_contigs.out.bam))
+        bcftools(filter_contigs_length.out.join(freebayes.out.vcf))
+        prokka(bcftools.out.contigs)
+        versions.mix(quast_pre.out.version, align_reads_to_contigs.out.version, bcftools.out.version, prokka.out.version)
 
     emit:
         quast_pre = quast_pre.out
         prokka = prokka.out
+        versions
+
 
 }
 
 workflow POST_ASSEMBLY_ANCIENT {
+    versions = Channel.empty()
     take:
         contigs
         trimmed_reads
@@ -52,19 +59,22 @@ workflow POST_ASSEMBLY_ANCIENT {
         quast_pre(contigs, "pre")
         filter_contigs_length(contigs)
         align_reads_to_contigs(filter_contigs_length.out.join(trimmed_reads))
-        freebayes_consensus_calling(filter_contigs_length.out.join(align_reads_to_contigs.out))
-        damageprofiler_pre(freebayes_consensus_calling.out.join(align_reads_to_contigs.out), "pre")
-        pydamage(align_reads_to_contigs.out)
-        filter_contigs_damage(pydamage.out.csv.join(freebayes_consensus_calling.out))
+        freebayes(filter_contigs_length.out.join(align_reads_to_contigs.out.bam))
+        bcftools(filter_contigs_length.out.join(freebayes.out.vcf))
+        damageprofiler_pre(bcftools.out.contigs.join(align_reads_to_contigs.out.bam), "pre")
+        pydamage(align_reads_to_contigs.out.bam)
+        filter_contigs_damage(pydamage.out.filtered_csv.join(bcftools.out.contigs))
         quast_post(filter_contigs_damage.out.fasta, "post")
-        damageprofiler_post(filter_contigs_damage.out.fasta.join(align_reads_to_contigs.out),"post")
-        prokka(filter_contigs_damage.out.fasta)
+        damageprofiler_post(filter_contigs_damage.out.fasta.join(align_reads_to_contigs.out.bam),"post")
+        prokka(bcftools.out.contigs)
+        versions.mix(quast_pre.out.version, align_reads_to_contigs.out.version, freebayes.out.version, bcftools.out.version, damageprofiler_pre.out.version, prokka.out.version)
 
     emit:
-        quast_pre = quast_pre.out
-        quast_post = quast_post.out
-        damageprofiler_pre = damageprofiler_pre.out
-        damageprofiler_post = damageprofiler_post.out
-        prokka = prokka.out
+        quast_pre = quast_pre.out.result
+        quast_post = quast_post.out.result
+        damageprofiler_pre = damageprofiler_pre.out.json
+        damageprofiler_post = damageprofiler_post.out.json
+        prokka = prokka.out.result
+        versions
 
 }
